@@ -1,0 +1,983 @@
+---
+title: "Del barrio al trabajo: ¿el viaje al empleo condiciona la formalidad en la Comuna 3 de Medellín?"
+subtitle: "Reto 2 · Econometría II · Informalidad laboral y movilidad · ECV Medellín 2025"
+author:
+  - Dulce María Sánchez
+  - Elisa Medina
+  - José Alejandro Jiménez
+  - Anny Aristizábal
+date: today
+date-format: long
+lang: es
+format:
+  html:
+    theme: flatly
+    toc: true
+    toc-depth: 3
+    toc-title: "Contenido"
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Ver código"
+    code-tools: true
+    smooth-scroll: true
+    fig-align: center
+    fig-width: 8
+    fig-height: 5
+    df-print: paged
+    embed-resources: true
+    include-in-header:
+      - text: |
+          <style>
+            h1, h2, h3 { color: #2A4D69; }
+            .title { font-weight: 800; color: #2A4D69; }
+            .subtitle { color: #C8553D; font-weight: 600; }
+            blockquote { border-left: 4px solid #C8553D; background: #fbf4f2; padding: .6rem 1rem; }
+            table { font-size: 0.92rem; }
+          </style>
+execute:
+  warning: false
+  message: false
+  echo: true
+---
+
+## En una frase {.unnumbered}
+
+> Usamos la Encuesta de Calidad de Vida de Medellín 2025 para estudiar si **cuánto tiempo se demora** una persona ocupada de Manrique en llegar a su trabajo, y **si lo hace en transporte público**, se asocia con la probabilidad de que su empleo sea **informal** (no cotiza a pensión).
+
+# Introducción y pregunta de investigación
+
+La informalidad laboral es una de las características estructurales del mercado de trabajo colombiano. En una ciudad como Medellín, donde el empleo formal tiende a concentrarse en ciertas zonas, el **camino entre el barrio y el trabajo** puede decir algo sobre las oportunidades de cada persona: quién se desplaza lejos, en qué medio lo hace y qué tipo de contrato logra.
+
+Este documento sigue el mismo recorrido analítico del Reto 2 anterior (descriptivas ponderadas → tablas cruzadas → modelo de elección discreta → efectos marginales → diagnóstico), pero con un tema distinto y algunas mejoras metodológicas.
+
+**Pregunta:** en la Comuna 3 (Manrique), ¿cómo se relacionan el tiempo de viaje al trabajo y el uso de transporte público con la probabilidad de tener un empleo informal, una vez controlamos por características individuales y del hogar?
+
+## Hipótesis de partida
+
+Antes de mirar los datos, planteamos qué esperaríamos y por qué. Los signos son conjeturas, no resultados.
+
+| Variable | Signo esperado sobre P(informal) | Razonamiento |
+|---|---|---|
+| Más tiempo de viaje | Negativo (o nulo) | Los empleos formales suelen estar en el centro y el sur de la ciudad (*desajuste espacial*), mientras que el trabajo informal se ejerce cerca de casa. |
+| Usar transporte público | Positivo | Quienes no pueden costear moto o carro suelen tener menores ingresos y empleos más precarios. |
+| Años de educación | Negativo | Más capital humano da acceso a contratos formales. |
+| Edad | Forma de U | Se entra y se sale del mercado laboral con más informalidad (jóvenes y mayores). |
+| Mujer | Ambiguo | Puede haber más informalidad por empleo doméstico y de cuidado, pero también mayor presencia en empleo público y de servicios. |
+| Casado o en unión libre | Negativo | Mayor estabilidad y afiliación como cotizante o beneficiario. |
+
+# Paquetes y datos
+
+Cargamos solo los paquetes que se usan con frecuencia. El resto se llama con su prefijo (`pkg::función`) para evitar conflictos de nombres.
+
+```{r}
+#| label: paquetes
+# install.packages(c("tidyverse", "readxl", "scales", "patchwork", "ggrepel",
+#                    "marginaleffects", "mfx", "pROC", "ResourceSelection",
+#                    "survey", "modelsummary", "car", "plotly", "sandwich"))
+library(tidyverse)
+library(readxl)
+library(scales)
+library(patchwork)
+library(ggrepel)
+
+# Paleta y tema del documento
+col_base   <- "#2A4D69"
+col_acento <- "#C8553D"
+col_gris   <- "#B8B8B8"
+theme_set(theme_minimal(base_size = 12) +
+            theme(plot.title = element_text(face = "bold", colour = col_base),
+                  plot.subtitle = element_text(colour = "grey30"),
+                  legend.position = "bottom"))
+
+# Comuna de análisis: 3 = Manrique, 16 = Belén
+COMUNA_ELEGIDA <- 3
+```
+
+Cargamos la base cruda (20.408 personas y 329 variables) y, si está disponible, el diccionario de datos. Los nombres originales llegan como `A.7`, `H.2A`, etc.; quitamos el punto para no tener que usar *backticks* todo el tiempo.
+
+```{r}
+#| label: lectura
+# Las rutas son relativas: dejen los dos archivos en la misma carpeta que este .qmd
+ruta_datos <- "ECV_2025.xlsx"
+ruta_dicc  <- "Diccionario-de-Datos-2025.xlsx"
+
+ecv_raw <- read_excel(ruta_datos)
+names(ecv_raw) <- gsub("\\.", "", names(ecv_raw))
+
+# Diccionario de categorías (opcional): ver_cats("H38") muestra los códigos de H38
+ver_cats <- function(v) message("Diccionario no disponible")
+if (file.exists(ruta_dicc)) {
+  dicc_valores <- read_excel(ruta_dicc, sheet = "Valores", skip = 3) |>
+    select(2:4) |>
+    set_names(c("variable", "valor", "etiqueta")) |>
+    fill(variable) |>
+    mutate(variable = gsub("\\.", "", variable)) |>
+    filter(!is.na(valor))
+  ver_cats <- function(v) dicc_valores |> filter(variable == v) |> print(n = 50)
+}
+
+cat("Filas:", nrow(ecv_raw), "| Columnas:", ncol(ecv_raw))
+```
+
+# Limpieza y construcción de variables
+
+::: {.callout-note title="Decisiones metodológicas sobre los datos faltantes"}
+- Los códigos **-99** (no responde), **-98** (no sabe), **-88** (no aplica) y **-888** (sin dato) se convierten en `NA`.
+- El código **-77 no se borra**: significa "Otro" y es una categoría real en variables como el modo de transporte (H36). Borrarlo, como se hace al limpiar todos los negativos a la vez, elimina personas válidas.
+- Se excluyen los corregimientos (A7 = 50, 60, 70, 80, 90) y se trabaja con las 16 comunas urbanas.
+:::
+
+```{r}
+#| label: limpieza-na
+codigos_na <- c(-99, -98, -88, -888)
+
+etiq_comuna <- c(
+  "1" = "Popular", "2" = "Santa Cruz", "3" = "Manrique", "4" = "Aranjuez",
+  "5" = "Castilla", "6" = "Doce de Octubre", "7" = "Robledo",
+  "8" = "Villa Hermosa", "9" = "Buenos Aires", "10" = "La Candelaria",
+  "11" = "Laureles - Estadio", "12" = "La América", "13" = "San Javier",
+  "14" = "El Poblado", "15" = "Guayabal", "16" = "Belén"
+)
+nombre_comuna <- unname(etiq_comuna[as.character(COMUNA_ELEGIDA)])
+
+ecv <- ecv_raw |>
+  mutate(across(where(is.numeric), ~ if_else(.x %in% codigos_na, NA_real_, .x))) |>
+  filter(A7 %in% 1:16) |>
+  mutate(
+    id_hogar   = paste0(NoForm, "_", Hogar),
+    id_persona = paste0(NoForm, "_", Hogar, "_", persona),
+    comuna     = A7,
+    comuna_nom = factor(unname(etiq_comuna[as.character(A7)]), levels = unname(etiq_comuna)),
+    estrato    = A10,
+    fev = FEV, feh = FEH, fep = FEP          # factores de expansión: viviendas, hogares, personas
+  )
+
+stopifnot(!any(duplicated(ecv$id_persona)))   # la llave de persona debe ser única
+```
+
+## Variables demográficas y de control
+
+```{r}
+#| label: demograficas
+# E6 (último nivel aprobado) -> años de educación
+anios_educ <- c("0" = 0, "1" = 1, "2" = 5, "3" = 9, "4" = 11, "5" = 12,
+                "6" = 14, "7" = 16, "8" = 17, "9" = 18, "10" = 21)
+
+ecv <- ecv |>
+  mutate(
+    mujer        = as.integer(B2 == 2),
+    edad         = B6,
+    jefe_hogar   = as.integer(B5 == 1),
+    # B7: 1 soltero | 2 casado | 3 viudo | 4 separado | 5 y 6 unión libre
+    casado_union = as.integer(B7 %in% c(2, 5, 6)),
+    educ_anios   = as.numeric(anios_educ[as.character(E6)]),
+    educ_nivel   = case_when(
+      E6 %in% 0:2  ~ "Primaria o menos",
+      E6 == 3      ~ "Secundaria incompleta",
+      E6 %in% 4:5  ~ "Media",
+      E6 %in% 6:7  ~ "Superior",
+      E6 %in% 8:10 ~ "Posgrado",
+      TRUE         ~ NA_character_
+    ) |> factor(levels = c("Primaria o menos", "Secundaria incompleta",
+                           "Media", "Superior", "Posgrado")),
+    migrante_muni  = as.integer(C1 == 2),
+    tiene_moto     = as.integer(J29 > 0),
+    tiene_auto     = as.integer(J28 > 0),
+    personas_por_cuarto = if_else(J4 > 0, A14 / J4, NA_real_),
+    hacinamiento   = as.integer(personas_por_cuarto > 3)
+  )
+```
+
+## Mercado laboral e informalidad
+
+La variable principal es la **informalidad por seguridad social**: la persona ocupada **no cotiza a pensión** (F2 = 2). Es la definición más usada en la literatura y la que reporta el DANE. Construimos además tres definiciones alternativas para evaluar la robustez de los resultados.
+
+```{r}
+#| label: laboral
+# H31: 1 asalariado TC | 2 asalariado TP | 3 cuenta propia TC | 4 cuenta propia TP
+#      5 desempleado | 6 estudia | 7 pensionado | 8 incapacitado | 9 labores del hogar
+# H38 contrato: 1 escrito indef/fijo | 2 verbal indef/fijo | 3 escrito eventual
+#               4 verbal eventual | 5 sin contrato
+# H40 prestaciones: 1 Sí | 2 No        F2 cotiza a pensión: 1 Sí | 2 No
+ecv <- ecv |>
+  mutate(
+    ocupado       = as.integer(H31 %in% 1:4),
+    asalariado    = if_else(ocupado == 1, as.integer(H31 %in% 1:2), NA_integer_),
+    cuenta_propia = if_else(ocupado == 1, as.integer(H31 %in% 3:4), NA_integer_),
+
+    informal_ss       = if_else(ocupado == 1, as.integer(F2 == 2), NA_integer_),
+    informal_contrato = if_else(ocupado == 1, as.integer(H38 %in% c(2, 4, 5)), NA_integer_),
+    informal_prest    = if_else(ocupado == 1, as.integer(H40 == 2), NA_integer_),
+    informal_amplia   = if_else(
+      ocupado == 1,
+      as.integer(coalesce(informal_ss, 0L) + coalesce(informal_contrato, 0L) +
+                   coalesce(informal_prest, 0L) > 0),
+      NA_integer_
+    ),
+
+    horas_sem   = if_else(ocupado == 1, H33, NA_real_),
+    menos_smmlv = if_else(ocupado == 1, as.integer(H35 == 1), NA_integer_),
+    sector = factor(H32, levels = 1:9, labels = c(
+      "Agropecuario", "Minería", "Servicios públicos", "Industria",
+      "Construcción", "Comercio/Hoteles", "Transporte/Comunicaciones",
+      "Financiero/Inmobiliario", "Servicios sociales"))
+  )
+
+# Ingresos laborales (H2B empleado, H3B cuenta propia): son ANUALES y tienen mucha
+# no respuesta. Los construimos solo para documentar por qué NO los usamos como variable
+# central del modelo (ver el diagnóstico de datos faltantes más abajo).
+ecv <- ecv |>
+  mutate(
+    ing_lab_anual = rowSums(cbind(H2B, H3B), na.rm = TRUE),
+    ing_lab_anual = if_else(ing_lab_anual == 0, NA_real_, ing_lab_anual),
+    ln_ing_lab    = if_else(ing_lab_anual > 0, log(ing_lab_anual / 12), NA_real_)
+  )
+```
+
+## Transporte y movilidad
+
+```{r}
+#| label: transporte
+# H36: 1 caminando | 2 bici | 3 moto | 4 bus/buseta | 5 transporte informal | 6 taxi/colectivo
+#      7 privado | 8 metro/cable | 9 SIT | 10 caballo | 11 lancha | -77 otro
+etiq_modo <- c("1" = "Caminando", "2" = "Bicicleta", "3" = "Moto", "4" = "Bus/Buseta",
+               "5" = "Transporte informal", "6" = "Taxi/Colectivo", "7" = "Privado",
+               "8" = "Metro/Cable", "9" = "SIT", "10" = "Caballo", "11" = "Lancha",
+               "-77" = "Otro")
+
+# Indicador que conserva el NA: si no sabemos el modo, no inventamos un 0
+flag <- function(x, set) if_else(is.na(x), NA_integer_, as.integer(x %in% set))
+
+ecv <- ecv |>
+  mutate(
+    modo_trabajo   = factor(etiq_modo[as.character(H36)], levels = unname(etiq_modo)),
+    tiempo_trabajo = if_else(ocupado == 1, H37, NA_real_),          # minutos
+
+    tp_masivo    = flag(H36, c(8, 9)),          # metro, cable, SIT
+    tp_colectivo = flag(H36, c(4, 6)),          # bus/buseta, taxi/colectivo
+    tp_publico   = flag(H36, c(4, 6, 8, 9)),
+    tp_informal  = flag(H36, 5),
+    t_privado    = flag(H36, c(3, 7)),          # moto o carro
+    t_activo     = flag(H36, c(1, 2)),          # a pie o en bici
+
+    modo_grupo = case_when(
+      t_activo == 1    ~ "A pie / bicicleta",
+      tp_masivo == 1   ~ "Metro / Cable / SIT",
+      tp_colectivo == 1~ "Bus / Taxi",
+      tp_informal == 1 ~ "Transporte informal",
+      t_privado == 1   ~ "Moto / carro",
+      !is.na(H36)      ~ "Otro",
+      TRUE             ~ NA_character_
+    ),
+    commute_largo_60 = if_else(!is.na(tiempo_trabajo), as.integer(tiempo_trabajo > 60), NA_integer_),
+
+    calif_cobertura_tp = Q2,
+    calif_calidad_tp   = Q3,
+    inseguridad_noche  = as.integer(S5 %in% c(3, 4))      # S5: 3 un poco inseguro | 4 muy inseguro
+  )
+```
+
+::: {.callout-warning title="Corrección respecto al código base"}
+En una versión inicial los indicadores de modo se construían con `as.integer(H36 %in% c(...))`. Cuando `H36` es `NA`, `%in%` devuelve `FALSE` y el indicador quedaba en **0**, es decir, se clasificaba como "no usa transporte público" a personas de las que en realidad no sabemos el modo. La función `flag()` conserva el `NA` y esas personas salen del modelo en lugar de contaminar la categoría de referencia.
+:::
+
+## Nivel de gasto del hogar
+
+Igual que en el Reto 2 anterior, resumimos el gasto mensual del hogar (K11) en categorías, pero esta vez usando **cuartiles de toda la ciudad** en lugar de cortes fijos. Lo usamos solo en las descriptivas: el gasto es consecuencia de los ingresos laborales, por lo que meterlo al modelo sería incluir una variable que depende de la informalidad (un *mal control*).
+
+```{r}
+#| label: hogares
+hogares <- ecv |>
+  group_by(id_hogar) |>
+  summarise(gasto_mensual = first(K11), .groups = "drop") |>
+  mutate(gasto_cuartil = factor(ntile(gasto_mensual, 4), levels = 1:4,
+                                labels = c("Q1 (menor gasto)", "Q2", "Q3", "Q4 (mayor gasto)")))
+
+ecv <- ecv |> left_join(hogares, by = "id_hogar")
+```
+
+# Variables de interés
+
+```{r}
+#| label: tabla-variables
+tribble(
+  ~Variable, ~`Código ECV`, ~Papel, ~Definición,
+  "informal_ss",       "F2",        "Dependiente", "1 si el ocupado no cotiza a pensión; 0 si cotiza",
+  "tiempo_10",         "H37",       "Clave A",     "Minutos de viaje al trabajo, divididos por 10",
+  "tp_publico",        "H36",       "Clave B",     "1 si va al trabajo en bus, taxi/colectivo, metro, cable o SIT",
+  "mujer",             "B2",        "Control",     "1 si es mujer",
+  "edad y edad²",      "B6",        "Control",     "Edad en años y su cuadrado",
+  "educ_anios",        "E6",        "Control",     "Años de educación aprobados",
+  "casado_union",      "B7",        "Control",     "1 si es casado o vive en unión libre",
+  "estrato_cat",       "A10",       "Control",     "Estrato 1, 2 o 3+",
+  "tiene_moto",        "J29",       "Extra",       "1 si el hogar tiene al menos una moto",
+  "jefe_hogar",        "B5",        "Extra",       "1 si es jefe del hogar",
+  "hacinamiento",      "J4, A14",   "Extra",       "1 si hay más de 3 personas por cuarto",
+  "inseguridad_noche", "S5",        "Extra",       "1 si se siente inseguro de noche en su zona",
+  "migrante_muni",     "C1",        "Extra",       "1 si nació en otro municipio"
+) |> knitr::kable()
+```
+
+# Contexto: ¿dónde queda Manrique?
+
+Antes de enfocarnos en una sola comuna, la ubicamos dentro de Medellín. Todos los promedios usan el factor de expansión de personas (`fep`).
+
+```{r}
+#| label: muestras
+w_mean <- function(x, w) weighted.mean(x, w, na.rm = TRUE)
+
+muestra_16 <- ecv |>
+  filter(ocupado == 1, between(edad, 15, 70)) |>
+  mutate(
+    sexo         = factor(mujer, 0:1, c("Hombre", "Mujer")),
+    informalidad = factor(informal_ss, 0:1, c("Formal", "Informal")),
+    estrato_cat  = factor(pmin(estrato, 3), levels = 1:3,
+                          labels = c("Estrato 1", "Estrato 2", "Estrato 3 o más")),
+    grupo_edad   = cut(edad, breaks = c(14, 28, 45, 70),
+                       labels = c("15-28", "29-45", "46-70")),
+    tipo_ocupacion = case_when(asalariado == 1 ~ "Asalariado",
+                               cuenta_propia == 1 ~ "Cuenta propia")
+  )
+
+muestra <- muestra_16 |> filter(comuna == COMUNA_ELEGIDA)
+tasa_global <- w_mean(muestra$informal_ss, muestra$fep)
+```
+
+```{r}
+#| label: ranking-comunas
+rank_comunas <- muestra_16 |>
+  group_by(comuna_nom) |>
+  summarise(n = n(),
+            informalidad = w_mean(informal_ss, fep),
+            tiempo_viaje = w_mean(tiempo_trabajo, fep),
+            pct_tp       = w_mean(tp_publico, fep),
+            .groups = "drop") |>
+  mutate(es_elegida = comuna_nom == nombre_comuna)
+
+p_rank <- rank_comunas |>
+  mutate(comuna_nom = fct_reorder(comuna_nom, informalidad)) |>
+  ggplot(aes(informalidad, comuna_nom, fill = es_elegida,
+             text = paste0(comuna_nom, ": ", percent(informalidad, accuracy = 0.1)))) +
+  geom_col() +
+  scale_fill_manual(values = c(`FALSE` = col_gris, `TRUE` = col_acento), guide = "none") +
+  scale_x_continuous(labels = percent) +
+  labs(title = "Informalidad por seguridad social, por comuna",
+       subtitle = paste("Resaltada:", nombre_comuna),
+       x = "% de ocupados que no cotiza a pensión", y = NULL)
+
+plotly::ggplotly(p_rank, tooltip = "text")
+```
+
+```{r}
+#| label: scatter-comunas
+#| fig-height: 5.5
+ggplot(rank_comunas, aes(tiempo_viaje, informalidad, label = comuna_nom)) +
+  geom_point(aes(size = n, colour = es_elegida), alpha = .85) +
+  geom_text_repel(size = 3.3, max.overlaps = 20) +
+  scale_colour_manual(values = c(`FALSE` = col_base, `TRUE` = col_acento), guide = "none") +
+  scale_size_continuous(range = c(2, 7), guide = "none") +
+  scale_y_continuous(labels = percent) +
+  labs(title = "Tiempo de viaje e informalidad: las 16 comunas",
+       subtitle = "Cada punto es una comuna; el tamaño indica el número de ocupados en la muestra",
+       x = "Minutos promedio de viaje al trabajo", y = "Tasa de informalidad")
+```
+
+Esta mirada agregada no demuestra nada sobre individuos (podría haber una falacia ecológica), pero sirve para formular la pregunta: ¿se parece Manrique a las comunas con trayectos más largos o más cortos? Para responderlo a nivel de persona usamos el modelo de la sección 9.
+
+# Muestra analítica
+
+## Datos faltantes en las variables clave
+
+Antes de estimar, revisamos cuánta información se pierde. Este diagnóstico justifica por qué el modelo usa `informal_ss` y no los ingresos laborales, y por qué se trabaja con casos completos.
+
+```{r}
+#| label: diagnostico-na
+vars_na <- c(informal_ss = "Informal (pensión)", tiempo_trabajo = "Tiempo de viaje",
+             tp_publico = "Transporte público", educ_anios = "Años de educación",
+             hacinamiento = "Hacinamiento", migrante_muni = "Migrante",
+             menos_smmlv = "Gana < 1 SMMLV", ln_ing_lab = "Ingreso laboral (log)")
+
+muestra |>
+  summarise(across(all_of(names(vars_na)), ~ mean(is.na(.x)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "pct_na") |>
+  mutate(etiqueta = unname(vars_na[variable])) |>
+  ggplot(aes(pct_na, fct_reorder(etiqueta, pct_na))) +
+  geom_col(fill = col_base) +
+  geom_text(aes(label = percent(pct_na, accuracy = 0.1)), hjust = -0.1, size = 3.5) +
+  scale_x_continuous(labels = percent, expand = expansion(mult = c(0, .15))) +
+  labs(title = paste("% de datos faltantes entre los ocupados de", nombre_comuna),
+       x = NULL, y = NULL)
+```
+
+## Muestra del modelo y embudo de observaciones
+
+Todas las especificaciones se estiman sobre **la misma muestra**, para que las diferencias entre modelos no vengan de comparar personas distintas.
+
+```{r}
+#| label: muestra-modelo
+vars_modelo <- c("informal_ss", "tiempo_trabajo", "tp_publico", "mujer", "edad",
+                 "educ_anios", "casado_union", "estrato_cat", "tiene_moto",
+                 "jefe_hogar", "hacinamiento", "inseguridad_noche", "migrante_muni")
+
+datos_modelo <- muestra |>
+  drop_na(all_of(vars_modelo)) |>
+  mutate(tiempo_10 = tiempo_trabajo / 10)
+
+tribble(
+  ~Paso, ~Observaciones,
+  "Personas en las 16 comunas urbanas", nrow(ecv),
+  paste("Personas en", nombre_comuna), sum(ecv$comuna == COMUNA_ELEGIDA),
+  "Ocupados de 15 a 70 años", nrow(muestra),
+  "... con informalidad observada", sum(!is.na(muestra$informal_ss)),
+  "... y con tiempo de viaje observado", sum(!is.na(muestra$informal_ss) & !is.na(muestra$tiempo_trabajo)),
+  "Muestra final del modelo (todas las covariables)", nrow(datos_modelo)
+) |> knitr::kable(format.args = list(big.mark = "."))
+```
+
+# Estadística descriptiva
+
+## Perfil del trabajador formal e informal
+
+```{r}
+#| label: perfil
+muestra |>
+  filter(!is.na(informalidad)) |>
+  group_by(informalidad) |>
+  summarise(
+    Observaciones = n(),
+    `Edad promedio`               = w_mean(edad, fep),
+    `Años de educación`           = w_mean(educ_anios, fep),
+    `% mujeres`                   = 100 * w_mean(mujer, fep),
+    `% casado / unión libre`      = 100 * w_mean(casado_union, fep),
+    `Minutos de viaje al trabajo` = w_mean(tiempo_trabajo, fep),
+    `% usa transporte público`    = 100 * w_mean(tp_publico, fep),
+    `% hogar con moto`            = 100 * w_mean(tiene_moto, fep)
+  ) |>
+  pivot_longer(-informalidad, names_to = "Indicador", values_to = "valor") |>
+  pivot_wider(names_from = informalidad, values_from = valor) |>
+  mutate(across(where(is.numeric), ~ round(.x, 1))) |>
+  knitr::kable(caption = "Promedios ponderados por condición de informalidad")
+```
+
+## Frecuencias ponderadas
+
+Esta función entrega el tamaño muestral y el total expandido de cada categoría. A diferencia del Reto 2 anterior, aquí **todas** las descriptivas usan el mismo ponderador (`fep`), porque la unidad de análisis es la persona ocupada.
+
+```{r}
+#| label: funciones-descriptivas
+frec_pond <- function(df, var, peso = fep) {
+  df |>
+    filter(!is.na({{ var }})) |>
+    group_by({{ var }}) |>
+    summarise(n_muestra = n(), n_exp = sum({{ peso }}), .groups = "drop") |>
+    mutate(pct = round(100 * n_exp / sum(n_exp), 1), n_exp = round(n_exp)) |>
+    arrange(desc(pct))
+}
+
+tasa_inf <- function(df, var, y = informal_ss, peso = fep) {
+  df |>
+    filter(!is.na({{ var }}), !is.na({{ y }})) |>
+    group_by({{ var }}) |>
+    summarise(n_muestra = n(), tasa = weighted.mean({{ y }}, {{ peso }}), .groups = "drop") |>
+    mutate(alerta = if_else(n_muestra < 30, "n < 30: interpretar con cautela", ""))
+}
+
+graf_tasa <- function(df, var, titulo, voltear = FALSE) {
+  p <- tasa_inf(df, {{ var }}) |>
+    ggplot(aes(x = {{ var }}, y = tasa)) +
+    geom_col(fill = col_base, width = .7) +
+    geom_hline(yintercept = tasa_global, linetype = "dashed", colour = col_acento) +
+    geom_text(aes(label = percent(tasa, accuracy = 1)),
+              vjust = if (voltear) 0.5 else -0.4, hjust = if (voltear) -0.15 else 0.5,
+              fontface = "bold", size = 3.4) +
+    scale_y_continuous(labels = percent, limits = c(0, 1.05), expand = expansion(mult = c(0, 0))) +
+    labs(title = titulo, x = NULL, y = NULL)
+  if (voltear) p <- p + coord_flip()
+  p
+}
+```
+
+```{r}
+#| label: frecuencias
+frec_pond(muestra, informalidad) |> knitr::kable(caption = "Condición de informalidad (por pensión)")
+frec_pond(muestra, sexo)           |> knitr::kable(caption = "Sexo")
+frec_pond(muestra, estrato_cat)    |> knitr::kable(caption = "Estrato")
+frec_pond(muestra, educ_nivel)     |> knitr::kable(caption = "Nivel educativo")
+frec_pond(muestra, modo_grupo)     |> knitr::kable(caption = "Modo de transporte al trabajo")
+```
+
+## ¿Cuánto se demoran en llegar al trabajo?
+
+```{r}
+#| label: tiempo-viaje
+p99 <- quantile(muestra$tiempo_trabajo, 0.99, na.rm = TRUE)
+
+muestra |>
+  filter(!is.na(tiempo_trabajo), !is.na(informalidad), tiempo_trabajo <= p99) |>
+  group_by(informalidad) |>
+  mutate(w = fep / sum(fep)) |>
+  ungroup() |>
+  ggplot(aes(tiempo_trabajo, fill = informalidad, weight = w)) +
+  geom_density(alpha = .55, colour = NA) +
+  scale_fill_manual(values = c(Formal = col_base, Informal = col_acento), name = NULL) +
+  labs(title = "Distribución del tiempo de viaje al trabajo",
+       subtitle = paste0("Se omiten viajes superiores al percentil 99 (", round(p99), " min)"),
+       x = "Minutos", y = "Densidad")
+```
+
+```{r}
+#| label: resumen-viaje
+muestra |>
+  filter(!is.na(tiempo_trabajo), !is.na(informalidad)) |>
+  group_by(informalidad) |>
+  summarise(
+    Promedio = w_mean(tiempo_trabajo, fep),
+    `% con más de 60 min` = 100 * w_mean(commute_largo_60, fep),
+    .groups = "drop"
+  ) |>
+  mutate(across(where(is.numeric), ~ round(.x, 1))) |>
+  knitr::kable(caption = "Tiempo de viaje al trabajo según condición de informalidad")
+```
+
+## Tasa de informalidad dentro de cada grupo
+
+En el Reto 2 anterior las tablas cruzadas se calculaban **por fila**, mostrando cómo se reparte cada causa entre grupos. Eso no permite decir qué grupo tiene mayor riesgo, porque depende de cuántas personas hay en cada grupo. Aquí calculamos la **tasa de informalidad dentro de cada categoría** y la comparamos con la tasa global de la comuna (línea punteada).
+
+```{r}
+#| label: tasas-grupos
+#| fig-height: 7.5
+g1 <- graf_tasa(muestra, sexo, "Por sexo")
+g2 <- graf_tasa(muestra, grupo_edad, "Por grupo de edad")
+g3 <- graf_tasa(muestra, estrato_cat, "Por estrato")
+g4 <- graf_tasa(muestra, modo_grupo, "Por modo de transporte", voltear = TRUE)
+
+(g1 | g2) / (g3 | g4) +
+  plot_annotation(title = paste("Tasa de informalidad en", nombre_comuna),
+                  subtitle = paste0("Línea punteada = tasa global (", percent(tasa_global, accuracy = 0.1), ")"))
+```
+
+```{r}
+#| label: tasas-educ-sector
+#| fig-height: 6
+g5 <- graf_tasa(muestra, educ_nivel, "Por nivel educativo", voltear = TRUE)
+g6 <- graf_tasa(muestra, sector, "Por sector económico", voltear = TRUE)
+g7 <- graf_tasa(muestra, tipo_ocupacion, "Por tipo de ocupación")
+g8 <- graf_tasa(muestra, gasto_cuartil, "Por cuartil de gasto del hogar", voltear = TRUE)
+
+(g5 | g6) / (g7 | g8)
+```
+
+Las categorías con menos de 30 observaciones deben leerse con cautela. Se pueden consultar así:
+
+```{r}
+#| label: celdas-pequenas
+bind_rows(
+  tasa_inf(muestra, sector) |> rename(categoria = sector) |> mutate(variable = "Sector", categoria = as.character(categoria)),
+  tasa_inf(muestra, modo_grupo) |> rename(categoria = modo_grupo) |> mutate(variable = "Modo")
+) |>
+  filter(alerta != "") |>
+  select(variable, categoria, n_muestra, tasa) |>
+  mutate(tasa = percent(tasa, accuracy = 0.1)) |>
+  knitr::kable(caption = "Categorías con menos de 30 observaciones")
+```
+
+## Educación y modo de transporte, al mismo tiempo
+
+```{r}
+#| label: heatmap
+#| fig-height: 5
+muestra |>
+  filter(!is.na(educ_nivel), !is.na(modo_grupo), !is.na(informal_ss)) |>
+  group_by(educ_nivel, modo_grupo) |>
+  summarise(n = n(), tasa = w_mean(informal_ss, fep), .groups = "drop") |>
+  mutate(tasa = if_else(n >= 10, tasa, NA_real_)) |>
+  ggplot(aes(modo_grupo, educ_nivel, fill = tasa)) +
+  geom_tile(colour = "white") +
+  geom_text(aes(label = if_else(is.na(tasa), paste0("n=", n), percent(tasa, accuracy = 1))), size = 3.2) +
+  scale_fill_gradient(low = "#F4E4DF", high = col_acento, labels = percent,
+                      na.value = "grey92", name = "Informalidad") +
+  labs(title = "Informalidad según educación y modo de transporte",
+       subtitle = "Celdas en gris: menos de 10 observaciones",
+       x = NULL, y = NULL) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```
+
+## Cuatro formas de medir la informalidad
+
+No existe una definición única. La elegida (pensión) es la más usada, pero comparamos con las otras tres para saber qué tanto cambia la fotografía.
+
+```{r}
+#| label: definiciones
+muestra |>
+  summarise(across(c(informal_ss, informal_contrato, informal_prest, informal_amplia),
+                   ~ w_mean(.x, fep))) |>
+  pivot_longer(everything(), names_to = "def", values_to = "tasa") |>
+  mutate(def = recode(def,
+                      informal_ss = "No cotiza a pensión",
+                      informal_contrato = "Contrato verbal o sin contrato",
+                      informal_prest = "Sin prestaciones sociales",
+                      informal_amplia = "Amplia (cualquiera de las tres)")) |>
+  ggplot(aes(tasa, fct_reorder(def, tasa))) +
+  geom_col(fill = col_base, width = .65) +
+  geom_text(aes(label = percent(tasa, accuracy = 0.1)), hjust = -0.1) +
+  scale_x_continuous(labels = percent, expand = expansion(mult = c(0, .15))) +
+  labs(title = paste("Informalidad en", nombre_comuna, "según la definición"),
+       x = NULL, y = NULL)
+```
+
+# Modelo econométrico
+
+## Especificación
+
+Como la variable dependiente es binaria ($Y_i = 1$ si la persona ocupada es informal), estimamos un **probit**:
+
+$$
+P(Y_i = 1 \mid X_i) = \Phi\left(\beta_0 + \beta_1\,\text{viaje}_i + \beta_2\,\text{TP}_i + \gamma' Z_i\right)
+$$
+
+donde $\Phi$ es la función de distribución normal estándar y $Z_i$ reúne los controles. Los coeficientes de un probit no se leen directamente como cambios en probabilidad, así que reportamos **efectos marginales promedio (AME)**: cuánto cambia, en promedio, la probabilidad de ser informal cuando cambia una variable.
+
+Estimamos tres especificaciones sobre la misma muestra:
+
+- **Modelo A:** el tiempo de viaje (en bloques de 10 minutos) como variable clave.
+- **Modelo B:** el uso de transporte público como variable clave.
+- **Modelo C:** ambas variables juntas y controles adicionales (moto en el hogar, jefatura, hacinamiento, inseguridad nocturna y migración).
+
+```{r}
+#| label: modelos
+controles <- "mujer + edad + I(edad^2) + educ_anios + casado_union + estrato_cat"
+extras    <- "tiene_moto + jefe_hogar + hacinamiento + inseguridad_noche + migrante_muni"
+
+formula_modelo <- function(y, clave, adicionales = NULL) {
+  rhs <- paste(c(clave, controles, adicionales), collapse = " + ")
+  as.formula(paste(y, "~", rhs))
+}
+
+probit <- binomial(link = "probit")
+
+m_A <- glm(formula_modelo("informal_ss", "tiempo_10"), data = datos_modelo, family = probit)
+m_B <- glm(formula_modelo("informal_ss", "tp_publico"), data = datos_modelo, family = probit)
+m_C <- glm(formula_modelo("informal_ss", "tiempo_10 + tp_publico", extras),
+           data = datos_modelo, family = probit)
+
+nombres_coef <- c(
+  "(Intercept)" = "Constante", "tiempo_10" = "Tiempo de viaje (+10 min)",
+  "tp_publico" = "Usa transporte público", "mujer" = "Mujer", "edad" = "Edad",
+  "I(edad^2)" = "Edad²", "educ_anios" = "Años de educación",
+  "casado_union" = "Casado / unión libre",
+  "estrato_catEstrato 2" = "Estrato 2 (vs. 1)", "estrato_catEstrato 3 o más" = "Estrato 3+ (vs. 1)",
+  "tiene_moto" = "Hogar con moto", "jefe_hogar" = "Jefe de hogar",
+  "hacinamiento" = "Hacinamiento", "inseguridad_noche" = "Inseguro de noche",
+  "migrante_muni" = "Migrante"
+)
+
+modelsummary::modelsummary(
+  list("A: tiempo de viaje" = m_A, "B: transporte público" = m_B, "C: completo" = m_C),
+  coef_rename = nombres_coef, stars = TRUE,
+  gof_map = c("nobs", "logLik", "AIC"),
+  title = "Coeficientes del probit (variable dependiente: informal por pensión)"
+)
+```
+
+## Efectos marginales promedio
+
+```{r}
+#| label: ame
+ame_A <- marginaleffects::avg_slopes(m_A) |> as_tibble()
+ame_B <- marginaleffects::avg_slopes(m_B) |> as_tibble()
+ame_C <- marginaleffects::avg_slopes(m_C) |> as_tibble()
+
+etiqueta_ame <- function(df) {
+  df |>
+    mutate(clave = if_else(term == "estrato_cat", paste0("estrato: ", contrast), term),
+           variable = coalesce(unname(c(
+             tiempo_10 = "Tiempo de viaje (+10 min)", tp_publico = "Usa transporte público",
+             mujer = "Mujer", edad = "Edad (por año)", educ_anios = "Años de educación",
+             casado_union = "Casado / unión libre",
+             `estrato: Estrato 2 - Estrato 1` = "Estrato 2 (vs. 1)",
+             `estrato: Estrato 3 o más - Estrato 1` = "Estrato 3+ (vs. 1)",
+             tiene_moto = "Hogar con moto", jefe_hogar = "Jefe de hogar",
+             hacinamiento = "Hacinamiento", inseguridad_noche = "Inseguro de noche",
+             migrante_muni = "Migrante")[clave]), clave))
+}
+
+ame_C |>
+  etiqueta_ame() |>
+  transmute(Variable = variable,
+            `Efecto (pp)` = round(estimate * 100, 2),
+            `Error est.` = round(std.error * 100, 2),
+            `IC 95% inf.` = round(conf.low * 100, 2),
+            `IC 95% sup.` = round(conf.high * 100, 2),
+            `p-valor` = round(p.value, 3)) |>
+  knitr::kable(caption = "Efectos marginales promedio del Modelo C (en puntos porcentuales)")
+```
+
+Para tener el contrapunto con el código base, esta es la salida de `mfx::probitmfx()` (efectos marginales **en la media**, no promedio):
+
+```{r}
+#| label: mfx
+mfx_C <- mfx::probitmfx(formula_modelo("informal_ss", "tiempo_10 + tp_publico", extras),
+                        data = as.data.frame(datos_modelo), atmean = TRUE)
+mfx_C
+```
+
+::: {.callout-note title="¿Por qué reportamos el AME y no solo mfx?"}
+`probitmfx()` calcula el efecto de cada coeficiente por separado. Con un término cuadrático (`edad` y `edad²`) eso **no captura la derivada total** respecto a la edad. El AME de `marginaleffects` sí la calcula correctamente, y además promedia sobre todas las personas en lugar de evaluar un individuo "promedio" que no existe.
+:::
+
+```{r}
+#| label: forest-ame
+#| fig-height: 6.5
+bind_rows(
+  etiqueta_ame(ame_A) |> mutate(modelo = "A: tiempo"),
+  etiqueta_ame(ame_B) |> mutate(modelo = "B: transporte público"),
+  etiqueta_ame(ame_C) |> mutate(modelo = "C: completo")
+) |>
+  ggplot(aes(estimate * 100, fct_rev(variable), colour = modelo)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+  geom_pointrange(aes(xmin = conf.low * 100, xmax = conf.high * 100),
+                  position = position_dodge(width = .6), size = .35) +
+  scale_colour_manual(values = c(col_gris, col_base, col_acento), name = NULL) +
+  labs(title = "Efectos marginales promedio sobre P(informal)",
+       subtitle = "Puntos porcentuales, con intervalos de confianza al 95%",
+       x = "Cambio en la probabilidad (pp)", y = NULL)
+```
+
+### Lectura automática de los resultados
+
+Las frases siguientes se generan con los números del modelo, así que se actualizan solas si cambia la muestra o la comuna.
+
+```{r}
+#| label: frases
+#| output: asis
+frase_ame <- function(ame_tbl, termino, unidad) {
+  f <- ame_tbl |> filter(term == termino) |> slice(1)
+  if (nrow(f) == 0) return("")
+  sprintf(
+    "- %s %s la probabilidad de ser informal en %.1f puntos porcentuales (IC 95%%: [%.1f ; %.1f]; p = %.3f), un efecto %s.",
+    unidad, if (f$estimate > 0) "aumenta" else "reduce",
+    abs(f$estimate) * 100, f$conf.low * 100, f$conf.high * 100, f$p.value,
+    if (f$p.value < 0.05) "estadísticamente significativo al 5%" else "no estadísticamente significativo al 5%"
+  )
+}
+
+cat(frase_ame(ame_C, "tiempo_10", "Diez minutos adicionales de viaje al trabajo"), "\n")
+cat(frase_ame(ame_C, "tp_publico", "Ir al trabajo en transporte público (frente a no hacerlo)"), "\n")
+cat(frase_ame(ame_C, "educ_anios", "Un año adicional de educación"), "\n")
+cat(frase_ame(ame_C, "mujer", "Ser mujer (frente a ser hombre)"), "\n")
+cat(frase_ame(ame_C, "casado_union", "Estar casado o en unión libre"), "\n")
+```
+
+## Probabilidades predichas
+
+Los efectos marginales resumen la pendiente; las curvas de probabilidad predicha muestran **cómo se ve el riesgo** para un perfil concreto (las demás variables se fijan en su media o moda).
+
+```{r}
+#| label: curva-tiempo
+#| fig-height: 5
+rej_t <- marginaleffects::datagrid(
+  model = m_C,
+  tiempo_10 = seq(floor(min(datos_modelo$tiempo_10)),
+                  ceiling(quantile(datos_modelo$tiempo_10, .95)), length.out = 40),
+  mujer = c(0, 1)
+)
+
+marginaleffects::predictions(m_C, newdata = rej_t) |>
+  as_tibble() |>
+  mutate(sexo = factor(mujer, 0:1, c("Hombre", "Mujer")), minutos = tiempo_10 * 10) |>
+  ggplot(aes(minutos, estimate, colour = sexo, fill = sexo)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .15, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_y_continuous(labels = percent) +
+  scale_colour_manual(values = c(Hombre = col_base, Mujer = col_acento), name = NULL) +
+  scale_fill_manual(values = c(Hombre = col_base, Mujer = col_acento), name = NULL) +
+  labs(title = "Probabilidad predicha de informalidad según el tiempo de viaje",
+       subtitle = "Modelo C; el resto de variables en su media o moda",
+       x = "Minutos de viaje al trabajo", y = "P(informal)")
+```
+
+```{r}
+#| label: curva-edad
+#| fig-height: 5
+rej_e <- marginaleffects::datagrid(model = m_C, edad = 16:70, mujer = c(0, 1))
+
+marginaleffects::predictions(m_C, newdata = rej_e) |>
+  as_tibble() |>
+  mutate(sexo = factor(mujer, 0:1, c("Hombre", "Mujer"))) |>
+  ggplot(aes(edad, estimate, colour = sexo, fill = sexo)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .15, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_y_continuous(labels = percent) +
+  scale_colour_manual(values = c(Hombre = col_base, Mujer = col_acento), name = NULL) +
+  scale_fill_manual(values = c(Hombre = col_base, Mujer = col_acento), name = NULL) +
+  labs(title = "Probabilidad predicha de informalidad a lo largo de la vida laboral",
+       x = "Edad", y = "P(informal)")
+```
+
+```{r}
+#| label: edad-giro
+b <- coef(m_C)
+edad_giro <- -b["edad"] / (2 * b["I(edad^2)"])
+cat("Edad en que cambia la tendencia (-b1 / 2·b2):", round(edad_giro, 1), "años.",
+    if (b["I(edad^2)"] > 0) "Es un MÍNIMO: la probabilidad baja hasta esa edad y luego sube."
+    else "Es un MÁXIMO: la probabilidad sube hasta esa edad y luego baja.")
+```
+
+## Calidad del ajuste
+
+Evaluamos los tres modelos con varias métricas: pseudo-R² de McFadden, prueba de razón de verosimilitud, prueba de Hosmer–Lemeshow, AUC de la curva ROC y una tabla de clasificación. Para clasificar usamos como umbral la **tasa observada de informalidad** y no 0,5, porque con una clase tan frecuente un umbral de 0,5 clasifica casi todo en un solo grupo.
+
+```{r}
+#| label: diagnostico
+diag_modelo <- function(m, nombre) {
+  y <- m$y
+  p <- fitted(m)
+  pred <- as.integer(p >= mean(y))
+  tab <- table(Observado = y, Predicho = factor(pred, levels = 0:1))
+  tibble(
+    Modelo = nombre,
+    n = length(y),
+    `Pseudo-R² McFadden` = 1 - m$deviance / m$null.deviance,
+    `LR χ²` = m$null.deviance - m$deviance,
+    gl = m$df.null - m$df.residual,
+    `p (LR)` = pchisq(`LR χ²`, gl, lower.tail = FALSE),
+    AIC = AIC(m),
+    AUC = as.numeric(pROC::auc(pROC::roc(y, p, quiet = TRUE))),
+    Exactitud = mean(pred == y),
+    Sensibilidad = tab["1", "1"] / sum(tab["1", ]),
+    Especificidad = tab["0", "0"] / sum(tab["0", ]),
+    `p (Hosmer-Lemeshow)` = ResourceSelection::hoslem.test(y, p, g = 10)$p.value
+  )
+}
+
+bind_rows(
+  diag_modelo(m_A, "A: tiempo de viaje"),
+  diag_modelo(m_B, "B: transporte público"),
+  diag_modelo(m_C, "C: completo")
+) |>
+  mutate(across(where(is.numeric), ~ round(.x, 3))) |>
+  knitr::kable(caption = "Diagnóstico de los modelos")
+```
+
+Una prueba de Hosmer–Lemeshow con p-valor alto indica que no hay evidencia de mal ajuste; con p-valor bajo, el modelo estaría calibrado deficientemente.
+
+```{r}
+#| label: roc
+#| fig-height: 5
+rocs <- list(
+  "A: tiempo" = pROC::roc(m_A$y, fitted(m_A), quiet = TRUE),
+  "B: transporte público" = pROC::roc(m_B$y, fitted(m_B), quiet = TRUE),
+  "C: completo" = pROC::roc(m_C$y, fitted(m_C), quiet = TRUE)
+)
+
+pROC::ggroc(rocs, legacy.axes = TRUE, linewidth = 1) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey50") +
+  scale_colour_manual(values = c(col_gris, col_base, col_acento), name = NULL) +
+  labs(title = "Curvas ROC", x = "1 - Especificidad", y = "Sensibilidad")
+```
+
+```{r}
+#| label: vif
+vif_C <- car::vif(m_C)
+knitr::kable(round(as.data.frame(vif_C), 2),
+             caption = "Multicolinealidad en el Modelo C (valores de GVIF; preocupan los muy altos)")
+```
+
+# Robustez
+
+Un resultado es más creíble si no depende de una sola decisión. Re-estimamos el efecto de las dos variables clave cambiando una decisión a la vez.
+
+```{r}
+#| label: robustez
+rhs_C <- "tiempo_10 + tp_publico"
+
+ame_clave <- function(modelo, etiqueta) {
+  marginaleffects::avg_slopes(modelo, variables = c("tiempo_10", "tp_publico")) |>
+    as_tibble() |>
+    mutate(especificacion = etiqueta, n = nobs(modelo))
+}
+
+fml_C <- function(y) formula_modelo(y, rhs_C, extras)
+corte99 <- quantile(datos_modelo$tiempo_10, .99)
+dis_C <- survey::svydesign(ids = ~1, weights = ~fep, data = datos_modelo)
+
+robustez <- bind_rows(
+  ame_clave(m_C, "Base: probit (pensión)"),
+  ame_clave(glm(fml_C("informal_ss"), data = datos_modelo, family = binomial("logit")), "Logit"),
+  ame_clave(survey::svyglm(fml_C("informal_ss"), design = dis_C, family = quasibinomial("probit")),
+            "Probit ponderado (fep)"),
+  ame_clave(glm(fml_C("informal_ss"), data = filter(datos_modelo, tiempo_10 <= corte99), family = probit),
+            "Sin viajes extremos (> p99)"),
+  ame_clave(glm(fml_C("informal_ss"), data = filter(datos_modelo, asalariado == 1), family = probit),
+            "Solo asalariados"),
+  ame_clave(glm(fml_C("informal_contrato"), data = datos_modelo, family = probit),
+            "Informal por contrato"),
+  ame_clave(glm(fml_C("informal_prest"), data = datos_modelo, family = probit),
+            "Informal por prestaciones"),
+  ame_clave(glm(fml_C("informal_amplia"), data = datos_modelo, family = probit),
+            "Informal amplia")
+)
+
+robustez |>
+  mutate(variable = recode(term, tiempo_10 = "Tiempo de viaje (+10 min)",
+                           tp_publico = "Usa transporte público"),
+         especificacion = factor(especificacion, levels = unique(especificacion))) |>
+  ggplot(aes(estimate * 100, fct_rev(especificacion))) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey40") +
+  geom_pointrange(aes(xmin = conf.low * 100, xmax = conf.high * 100), colour = col_base, size = .4) +
+  facet_wrap(~ variable, scales = "free_x") +
+  labs(title = "El efecto estimado bajo distintas decisiones de análisis",
+       subtitle = "AME en puntos porcentuales, IC 95%",
+       x = "Cambio en la probabilidad (pp)", y = NULL)
+```
+
+```{r}
+#| label: robustez-tabla
+robustez |>
+  transmute(Especificación = especificacion, n,
+            Variable = term,
+            `AME (pp)` = round(estimate * 100, 2),
+            `p-valor` = round(p.value, 3)) |>
+  knitr::kable(caption = "Detalle de las pruebas de robustez")
+```
+
+::: {.callout-note title="Cómo leer esta sección"}
+Las definiciones de informalidad aplican a poblaciones distintas: el tipo de contrato (H38) solo lo responden los asalariados, mientras que la afiliación a pensión aplica a todos los ocupados. Por eso el número de observaciones (`n`) cambia entre filas. Lo importante es si el **signo** y la **significancia** de los efectos se mantienen.
+:::
+
+# Conclusiones y limitaciones
+
+## Resultados principales
+
+```{r}
+#| label: conclusiones
+#| output: asis
+cat("Para los ocupados de ", nombre_comuna, " (n = ", nrow(datos_modelo), "), el Modelo C muestra que:\n\n", sep = "")
+cat(frase_ame(ame_C, "tiempo_10", "Diez minutos adicionales de viaje"), "\n")
+cat(frase_ame(ame_C, "tp_publico", "Usar transporte público"), "\n")
+cat(frase_ame(ame_C, "educ_anios", "Un año más de educación"), "\n")
+```
+
+Con estos números se pueden contrastar las hipótesis de la sección 1: si los signos coinciden con lo esperado, la evidencia es compatible con la idea de que la ubicación del empleo y el medio de transporte reflejan diferencias en las oportunidades laborales. Si no coinciden, conviene discutir qué mecanismo alternativo podría explicarlo.
+
+## Limitaciones
+
+1. **Asociación, no causalidad.** El modelo describe correlaciones condicionales. Es posible la **causalidad inversa**: quienes tienen un empleo informal pueden elegir trabajos cercanos a casa, y no al revés.
+2. **Selección y variables omitidas.** El ingreso, la formalidad del empleador o la distancia real al trabajo no están en el modelo. Los ingresos laborales tienen una proporción muy alta de datos faltantes (ver sección 7), y el gasto del hogar se excluyó por ser un mal control.
+3. **Endogeneidad del modo de transporte.** Se escoge el modo según el ingreso y el lugar de trabajo, que a su vez dependen de la formalidad del empleo.
+4. **Muestra de una sola comuna.** Con pocos casos por categoría, los intervalos de confianza son amplios y algunas celdas (sector, modo) son pequeñas.
+5. **Corte transversal.** No observamos trayectorias: no sabemos si la persona fue informal antes o cambió de empleo.
+
+## Posibles extensiones
+
+- Un **logit multinomial** que distinga entre asalariado formal, asalariado informal y cuenta propia, en lugar de una sola variable binaria.
+- Comparar **Manrique con Belén** (basta cambiar `COMUNA_ELEGIDA` y el título), para ver si la relación entre viaje e informalidad depende del territorio.
+- Incorporar las **calificaciones del transporte público** (`calif_cobertura_tp`, `calif_calidad_tp`) como mecanismo.
+
+# Reproducibilidad {.unnumbered}
+
+```{r}
+#| label: sesion
+sessionInfo()
+```

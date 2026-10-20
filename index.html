@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Del barrio al trabajo: estudio econométrico sobre informalidad laboral y movilidad en la Comuna 3 (Manrique) de Medellín. Trabajo de campo, entrevistas, galería, mapa interactivo y análisis probit." />
+<meta name="author" content="José Alejandro Jiménez Vásquez, Anny Aristizábal, Dulce María Franco, Elisa Medina" />
+<title>Del barrio al trabajo · Informalidad en Manrique · Comuna 3</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<!-- Prism syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+<link rel="stylesheet" href="assets/css/styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍊</text></svg>" />
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar" aria-label="Navegación principal">
+  <div class="container">
+    <a href="#inicio" class="brand"><span class="dot"></span> Manrique · Reto 2</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#trabajo">Trabajo</a></li>
+      <li><a href="#econometria">Econometría</a></li>
+      <li><a href="#datos">Datos</a></li>
+      <li><a href="#entrevistas">Entrevistas</a></li>
+      <li><a href="#galeria">Galería</a></li>
+      <li><a href="#mapa">Mapa</a></li>
+      <li><a href="#literatura">Literatura</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="inicio">
+  <div class="container">
+    <p class="hero-eyebrow reveal">Econometría II · Reto 2 · ECV Medellín 2025</p>
+    <h1 class="reveal d1">Del barrio al trabajo: <span class="accent">¿el viaje condiciona la formalidad</span> en la Comuna 3 de Medellín?</h1>
+    <p class="sub reveal d2">Estudiamos si el tiempo que tarda una persona ocupada de Manrique en llegar a su trabajo —y si usa transporte público— se asocia con la probabilidad de tener un empleo informal. Datos, código ejecutable, voces del territorio y un recorrido por la 45.</p>
+    <div class="hero-meta reveal d3">
+      <span class="chip">🧮 Modelo probit</span>
+      <span class="chip">🎧 2 entrevistas de campo</span>
+      <span class="chip">📸 Galería del territorio</span>
+      <span class="chip">🗺️ Mapa interactivo</span>
+      <span class="chip">📚 Revisión de literatura</span>
+    </div>
+    <div class="hero-cta reveal d3">
+      <a href="#econometria" class="btn btn-primary">Ver el análisis 🚀</a>
+      <a href="#entrevistas" class="btn btn-ghost">Escuchar las entrevistas 🎧</a>
+    </div>
+    <p class="authors reveal d4">Un trabajo de <strong>José Alejandro Jiménez Vásquez</strong> · <strong>Anny Aristizábal</strong> · <strong>Dulce María Franco</strong> · <strong>Elisa Medina</strong></p>
+  </div>
+  <a href="#trabajo" class="scroll-ind" aria-label="Bajar">⌄</a>
+</header>
+
+<!-- ============ TRABAJO ESCRITO ============ -->
+<section class="section" id="trabajo">
+  <div class="container">
+    <span class="eyebrow reveal">El trabajo escrito</span>
+    <h2 class="section-title reveal">La pregunta y el recorrido de campo</h2>
+    <p class="section-lead reveal">El 17 de octubre, al rededor del mediodía, estuvimos en la comuna 3 Manrique sobre la 45 (oficialmente la Avenida Carlos Gardel), reconocida por su amplio comercio, su activa vida nocturna y su cultura tanguera. Esta es la historia de esa salida y de la pregunta que la guió.</p>
+
+    <div class="grid grid-4" style="margin-bottom:2.4rem">
+      <div class="card stat-card reveal"><div class="stat-num" data-count="2">0</div><div class="stat-label">entrevistas logradas</div></div>
+      <div class="card stat-card reveal d1"><div class="stat-num" data-count="20408">0</div><div class="stat-label">personas en la ECV 2025</div></div>
+      <div class="card stat-card reveal d2"><div class="stat-num" data-count="16">0</div><div class="stat-label">comunas urbanas</div></div>
+      <div class="card stat-card reveal d3"><div class="stat-num" data-count="3" data-suffix="">0</div><div class="stat-label">Comuna: Manrique</div></div>
+    </div>
+
+    <div class="prose reveal">
+      <h3>En una frase</h3>
+      <blockquote>Usamos la Encuesta de Calidad de Vida de Medellín 2025 para estudiar si <strong>cuánto tiempo se demora</strong> una persona ocupada de Manrique en llegar a su trabajo, y <strong>si lo hace en transporte público</strong>, se asocia con la probabilidad de que su empleo sea <strong>informal</strong> (no cotiza a pensión).</blockquote>
+
+      <h3>Introducción y pregunta de investigación</h3>
+      <p>La informalidad laboral es una de las características estructurales del mercado de trabajo colombiano. En una ciudad como Medellín, donde el empleo formal tiende a concentrarse en ciertas zonas, el <em>camino entre el barrio y el trabajo</em> puede decir algo sobre las oportunidades de cada persona: quién se desplaza lejos, en qué medio lo hace y qué tipo de contrato logra.</p>
+      <p><strong>Pregunta:</strong> en la Comuna 3 (Manrique), ¿cómo se relacionan el tiempo de viaje al trabajo y el uso de transporte público con la probabilidad de tener un empleo informal, una vez controlamos por características individuales y del hogar?</p>
+
+      <h3>Hipótesis de partida</h3>
+      <p>Antes de mirar los datos, planteamos qué esperaríamos y por qué. Los signos son conjeturas, no resultados.</p>
+      <div class="table-wrap">
+        <table class="hyp-table">
+          <thead><tr><th>Variable</th><th>Signo esperado sobre P(informal)</th><th>Razonamiento</th></tr></thead>
+          <tbody>
+            <tr><td>Más tiempo de viaje</td><td>Negativo (o nulo)</td><td>Los empleos formales suelen estar en el centro y el sur (desajuste espacial); el trabajo informal se ejerce cerca de casa.</td></tr>
+            <tr><td>Usar transporte público</td><td>Positivo</td><td>Quienes no pueden costear moto o carro suelen tener menores ingresos y empleos más precarios.</td></tr>
+            <tr><td>Años de educación</td><td>Negativo</td><td>Más capital humano da acceso a contratos formales.</td></tr>
+            <tr><td>Edad</td><td>Forma de U</td><td>Se entra y se sale del mercado laboral con más informalidad (jóvenes y mayores).</td></tr>
+            <tr><td>Mujer</td><td>Ambiguo</td><td>Más informalidad por empleo doméstico y de cuidado, pero también presencia en empleo público y de servicios.</td></tr>
+            <tr><td>Casado / unión libre</td><td>Negativo</td><td>Mayor estabilidad y afiliación como cotizante o beneficiario.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Lo que encontramos en la 45</h3>
+      <p>Después de varios rechazos por parte de la comunidad, logramos dos entrevistas con distintos trabajadores. <strong>Andrés</strong> es un trabajador informal amante de la física, los números y los retos; estudia ingeniería mecatrónica en la Universidad de Antioquia y tiene su propio puesto de jugos de naranja y borojó sobre la calle principal. No cotiza a salud ni pensión, pero ha tenido trabajos formales en el pasado.</p>
+      <blockquote>Puede ser que hayan varias oportunidades, pero muchos empleadores no se enfocan en mirar si el trabajador está bien remunerado, si está a gusto… esa es una de las causas más grandes por las que los trabajadores, en cualquier momento, dicen: no, ya no vuelvo.<cite>— Andrés, trabajador independiente</cite></blockquote>
+      <p><strong>Jessica</strong> se dedica al área de la belleza en un salón sobre la 45. Vive en Niquía y se demora unos 30 minutos en llegar al trabajo en Uber moto o transporte público, del cual se siente inconforme por su alto precio. Su hija es la mayor razón por la que busca un trabajo cercano y flexible.</p>
+      <blockquote>Yo hoy por eso trabajo independiente, porque yo viví de un mínimo. Pagar un transporte público ya se está yendo casi un 30 % del salario mínimo, entonces uno trata de buscar otros métodos para trabajar como esto.<cite>— Jessica, esteticista independiente</cite></blockquote>
+      <p>Ambos llegaron a la misma conclusión: para ellos, la informalidad es ser independiente —no distinguen entre ambos términos ni consideran su trabajo "informal"— y los empleadores no dan suficientes garantías. La cuestión trasciende el tiempo de viaje: en términos reales, <strong>el dinero no rinde</strong>. Por eso prefieren laborar en condiciones en las que no les sea obligatorio cotizar, dentro de la misma comunidad y con cortos trayectos entre el trabajo y su hogar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ECONOMETRÍA ============ -->
+<section class="section section-alt" id="econometria">
+  <div class="container">
+    <span class="eyebrow reveal">La parte econométrica</span>
+    <h2 class="section-title reveal">El código, paso a paso</h2>
+    <p class="section-lead reveal">Todo el análisis está escrito en R dentro de un documento Quarto reproducible. Aquí puedes explorar el código real por secciones, con resaltado de sintaxis, copiarlo y ejecutarlo tú mismo. El flujo sigue el recorrido clásico: descriptivas ponderadas → tablas cruzadas → modelo de elección discreta → efectos marginales → diagnóstico.</p>
+
+    <div class="code-tabs reveal" id="codeTabs" role="tablist"></div>
+    <div id="codeBlocks" class="reveal"></div>
+
+    <div class="run-note reveal">
+      <strong>▶ ¿Cómo ejecutar este código?</strong> Descarga el documento fuente
+      <a href="assets/data/Reto2_Informalidad_Manrique.qmd" download>Reto2_Informalidad_Manrique.qmd</a>,
+      coloca junto a él los archivos <code>ECV_2025.xlsx</code> y <code>Diccionario-de-Datos-2025.xlsx</code>, y renderiza con
+      <code>quarto render Reto2_Informalidad_Manrique.qmd</code> (necesitas R y los paquetes listados en la primera pestaña).
+      También puedes copiar cada bloque con el botón de <em>Copiar</em> y correrlo en RStudio.
+    </div>
+  </div>
+</section>
+
+<!-- ============ GRÁFICAS / RESULTADOS ============ -->
+<section class="section" id="resultados">
+  <div class="container">
+    <span class="eyebrow reveal">Resultados visuales</span>
+    <h2 class="section-title reveal">Lo que dicen los modelos</h2>
+    <p class="section-lead reveal">Reproducimos aquí los resultados principales del análisis con gráficos interactivos construidos a partir de las especificaciones del modelo. El modelo es un <strong>probit</strong> sobre la informalidad por pensión; reportamos efectos marginales promedio (AME) en puntos porcentuales.</p>
+
+    <div class="grid grid-2">
+      <div class="chart-card reveal">
+        <h4>Informalidad por comuna</h4>
+        <p>Posición relativa de Manrique frente a las 16 comunas urbanas (ilustrativo, según el patrón del análisis).</p>
+        <canvas id="chartComunas" height="260"></canvas>
+      </div>
+      <div class="chart-card reveal d1">
+        <h4>Efectos marginales promedio (Modelo C)</h4>
+        <p>Cambio en la probabilidad de ser informal, en puntos porcentuales, ante un cambio en cada variable.</p>
+        <canvas id="chartAME" height="260"></canvas>
+      </div>
+      <div class="chart-card reveal">
+        <h4>Tiempo de viaje e informalidad entre comunas</h4>
+        <p>Cada punto es una comuna: relación entre minutos promedio de viaje y tasa de informalidad.</p>
+        <canvas id="chartScatter" height="260"></canvas>
+      </div>
+      <div class="chart-card reveal d1">
+        <h4>Probabilidad predicha según la edad</h4>
+        <p>Curva en forma de U: la informalidad predicha a lo largo de la vida laboral, por sexo.</p>
+        <canvas id="chartEdad" height="260"></canvas>
+      </div>
+    </div>
+    <p style="margin-top:1rem;color:var(--muted);font-size:0.85rem" class="reveal">Los gráficos ilustran la forma y el sentido de los resultados del documento Quarto. Las cifras exactas se obtienen al renderizar el <code>.qmd</code> con la base ECV 2025 completa.</p>
+  </div>
+</section>
+
+<!-- ============ EXPLORADOR DE DATOS ============ -->
+<section class="section section-alt" id="datos">
+  <div class="container">
+    <span class="eyebrow reveal">Explorador de datos</span>
+    <h2 class="section-title reveal">Los datos de campo</h2>
+    <p class="section-lead reveal">Estos son los dos trabajadores que entrevistamos en la 45. Explora sus perfiles y compara sus respuestas: ambos coinciden en preferir la independencia y los trayectos cortos, pero por motivos distintos.</p>
+
+    <div class="explorer-card reveal">
+      <div class="person-tabs" id="personTabs"></div>
+      <div id="personData"></div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:1.6rem">
+      <div class="card reveal">
+        <span class="icon">🧮</span>
+        <h3>Variable dependiente</h3>
+        <p><strong>informal_ss</strong>: la persona ocupada no cotiza a pensión (F2 = 2). Es la definición más usada en la literatura y la que reporta el DANE.</p>
+      </div>
+      <div class="card reveal d1">
+        <span class="icon">🚍</span>
+        <h3>Variables clave</h3>
+        <p><strong>tiempo_10</strong> (minutos de viaje / 10) y <strong>tp_publico</strong> (va al trabajo en bus, taxi/colectivo, metro, cable o SIT).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ENTREVISTAS ============ -->
+<section class="section" id="entrevistas">
+  <div class="container">
+    <span class="eyebrow reveal">Voces del territorio</span>
+    <h2 class="section-title reveal">Escucha las entrevistas</h2>
+    <p class="section-lead reveal">Reproduce las entrevistas completas grabadas en campo. El reproductor es persistente: sigue sonando mientras navegas por toda la página. Puedes pausar, adelantar y retroceder, cambiar la velocidad y ajustar el volumen.</p>
+
+    <div class="grid grid-2">
+      <div class="card interview-card reveal" >
+        <div class="av">A</div>
+        <div class="meta">
+          <h3>Andrés</h3>
+          <p>Puesto de jugos · estudiante de ing. mecatrónica · vive en Manrique · camina 25 min al trabajo.</p>
+        </div>
+        <button class="play-inline" data-audio="assets/audio/entrevista-andres.mp3" data-title="Entrevista a Andrés" data-sub="Trabajador independiente · Manrique">▶ Reproducir</button>
+      </div>
+      <div class="card interview-card reveal d1">
+        <div class="av">J</div>
+        <div class="meta">
+          <h3>Jessica</h3>
+          <p>Depilación, uñas y pestañas · bachiller · vive en Niquía · 30 min en Uber moto o transporte público.</p>
+        </div>
+        <button class="play-inline" data-audio="assets/audio/entrevista-jessica.mp3" data-title="Entrevista a Jessica" data-sub="Esteticista independiente · Niquía">▶ Reproducir</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GALERÍA ============ -->
+<section class="section section-alt" id="galeria">
+  <div class="container">
+    <span class="eyebrow reveal">Salida de campo</span>
+    <h2 class="section-title reveal">Galería de la 45</h2>
+    <p class="section-lead reveal">Imágenes tomadas durante la salida de campo en la Comuna 3. Deja tu like (¡las veces que quieras!), ábrelas en grande y hasta edítalas con filtros. Los likes se guardan en tu navegador.</p>
+    <div class="gallery reveal" id="gallery"></div>
+  </div>
+</section>
+
+<!-- ============ MAPA ============ -->
+<section class="section" id="mapa">
+  <div class="container">
+    <span class="eyebrow reveal">Dónde ocurrió</span>
+    <h2 class="section-title reveal">Mapa interactivo de Manrique</h2>
+    <p class="section-lead reveal">La Comuna 3 (Manrique) está en la zona nororiental de Medellín. Creció junto al tranvía y es el barrio tanguero por excelencia. Explora los puntos de interés: haz clic en la lista o en los marcadores del mapa.</p>
+    <div class="map-layout">
+      <div id="map" class="reveal" role="application" aria-label="Mapa de la Comuna 3 Manrique"></div>
+      <div class="poi-list reveal d1" id="poiList"></div>
+    </div>
+    <div class="prose reveal" style="margin-top:1.6rem">
+      <h3>Un poco de historia</h3>
+      <p>Manrique es reconocida por su amplio comercio, su activa vida nocturna y una profunda cultura tanguera. La <strong>carrera 45</strong> —oficialmente la Avenida Carlos Gardel— es su columna vertebral: allí están la <strong>Casa Gardeliana</strong> y la estatua del "Zorzal Criollo", que recuerdan el vínculo del barrio con el tango desde los tiempos del tranvía. Hoy, iniciativas como <em>"Vive Manrique"</em> buscan que la 45 y sus alrededores sean reconocidos como una ruta turística cultural y comunitaria.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LITERATURA ============ -->
+<section class="section section-alt" id="literatura">
+  <div class="container">
+    <span class="eyebrow reveal">Marco teórico</span>
+    <h2 class="section-title reveal">Revisión de literatura</h2>
+    <p class="section-lead reveal">La literatura colombiana coincide en que la informalidad laboral es un fenómeno estructural, resultado de la incapacidad de la economía para emplear formalmente a toda la población, de los costos de la formalidad y del diseño mismo de la protección social, con efectos que se transmiten directamente a la cobertura pensional.</p>
+
+    <div class="prose reveal">
+      <p><span class="authors-ref">Ochoa y Ordóñez (2004)</span> sostienen que el crecimiento del sector informal se explica en parte por la insuficiente inversión y por los problemas de inseguridad, factores que reducen el PIB y coexisten con un exceso de mano de obra que deja a buena parte de la población sin otra opción que el sector informal. Entre los determinantes destacan el nivel educativo, el sexo, el desempleo, los costos de la formalidad, la edad, la pobreza rural y el desplazamiento forzoso.</p>
+      <p><span class="authors-ref">Núñez (2010)</span> argumenta que las fallas estructurales de los programas de protección social pueden operar como desincentivos al trabajo formal y perpetuar la pobreza: para las familias beneficiarias resulta más costoso perder su condición que renunciar a los subsidios. Identifica los sobrecostos del salario mínimo, la valoración incompleta de la seguridad social y los problemas de focalización.</p>
+      <p><span class="authors-ref">Ramírez et al. (2015)</span>, mediante un modelo <strong>probit</strong> para 2008-2012, hallan que el subsidio en salud del Sisbén aumenta la probabilidad de estar en la informalidad, y que la educación media y superior la reduce. Este resultado respalda la elección metodológica de nuestro propio modelo probit.</p>
+      <p><span class="authors-ref">Cortes (2014)</span> recuerda que la Constitución establece la seguridad social como servicio público obligatorio. Advierte que solo 1 de cada 10 colombianos llega a pensionarse y que apenas cerca del 30 % de la población económicamente activa está afiliada al sistema. <span class="authors-ref">Santa María et al. (2010)</span> coinciden en que la informalidad y el desempleo afectan de forma desproporcionada a jóvenes, trabajadores menos calificados y cuenta propia.</p>
+      <blockquote>En el trimestre abril-junio de 2026, el 54,5 % de los ocupados en Colombia estaba en la informalidad, frente a 40,7 % en las 13 principales ciudades. La Corte Constitucional avaló buena parte de la reforma pensional (Ley 2381 de 2024), con vigencia diferida.</blockquote>
+    </div>
+
+    <h3 style="margin:2rem 0 1rem;color:var(--purple-800)" class="reveal">Fuentes de información</h3>
+    <ul class="ref-list reveal">
+      <li><span class="authors-ref">Ochoa Valencia, D., &amp; Ordóñez, A. (2004).</span> Informalidad en Colombia: causas, efectos y características de la economía del rebusque. <em>Estudios Gerenciales, 20</em>(90), 105-116. <a href="http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S0123-59232004000100005&lng=en&tlng=es" target="_blank" rel="noopener">SciELO ↗</a></li>
+      <li><span class="authors-ref">Núñez M., J. (2010).</span> Mercado laboral y sistema de protección social en Colombia: desincentivos al trabajo y al progreso. <em>Perfil de Coyuntura Económica</em>, (16), 65-90. <a href="http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S1657-42142010000200004&lng=en&tlng=es" target="_blank" rel="noopener">SciELO ↗</a></li>
+      <li><span class="authors-ref">Santa María, M., Steiner, R., Botero, J. H., Martínez, M., &amp; Millán, N. (2010).</span> El sistema pensional en Colombia: retos y alternativas para aumentar la cobertura. <em>Fedesarrollo</em>. <a href="https://www.repository.fedesarrollo.org.co/handle/11445/351" target="_blank" rel="noopener">Repositorio ↗</a></li>
+      <li><span class="authors-ref">Ramírez Gallego, J. B., Ávila Carreño, C. A., &amp; Arias Manrique, I. J. (2015).</span> Factores que inciden en la probabilidad de permanecer en la informalidad en Colombia (2008-2012). <em>Revista Facultad de Ciencias Económicas, 23</em>(2), 9-20. <a href="https://doi.org/10.18359/rfce.1604" target="_blank" rel="noopener">DOI ↗</a></li>
+      <li><span class="authors-ref">Cortes, I. (2014).</span> De qué manera afecta la reforma pensional de Colombia a los trabajadores formales e informales. Universidad La Gran Colombia. <a href="https://repository.ugc.edu.co/server/api/core/bitstreams/9ffdc6e5-d74a-49d8-83db-a1cfd9a01676/content" target="_blank" rel="noopener">Repositorio ↗</a></li>
+      <li><span class="authors-ref">Fuente de datos:</span> Encuesta de Calidad de Vida de Medellín (ECV) 2025 — Alcaldía de Medellín (20.408 personas, 329 variables).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="container">
+    <h2 style="color:#fff">Del barrio al trabajo 🍊</h2>
+    <p>Reto 2 · Econometría II · Informalidad laboral y movilidad · Comuna 3 Manrique · ECV Medellín 2025</p>
+    <div class="authors-foot">
+      <span class="author-pill">👤 <strong>José Alejandro Jiménez Vásquez</strong></span>
+      <span class="author-pill">👤 <strong>Anny Aristizábal</strong></span>
+      <span class="author-pill">👤 <strong>Dulce María Franco</strong></span>
+      <span class="author-pill">👤 <strong>Elisa Medina</strong></span>
+    </div>
+    <p class="fine">Hecho con 💜 por los autores · Datos de la ECV Medellín 2025 · Código reproducible en R + Quarto</p>
+  </div>
+</footer>
+
+<!-- ============ PERSISTENT AUDIO PLAYER ============ -->
+<div class="player" id="player" role="region" aria-label="Reproductor de audio">
+  <div class="player-inner">
+    <div class="player-track">
+      <div class="t-title" id="pTitle">Selecciona una entrevista</div>
+      <div class="t-sub" id="pSub">Reproductor persistente</div>
+    </div>
+    <div class="player-controls">
+      <button class="p-btn" id="pBack" aria-label="Retroceder 10 segundos" title="Retroceder 10s">⏪</button>
+      <button class="p-btn play" id="pPlay" aria-label="Reproducir o pausar">▶</button>
+      <button class="p-btn" id="pFwd" aria-label="Adelantar 10 segundos" title="Adelantar 10s">⏩</button>
+    </div>
+    <div class="player-progress">
+      <span class="time" id="pCur">0:00</span>
+      <input type="range" class="seek" id="pSeek" min="0" max="100" value="0" aria-label="Posición de reproducción" />
+      <span class="time" id="pDur">0:00</span>
+    </div>
+    <div class="player-extra">
+      <button class="rate-btn" id="pRate" aria-label="Velocidad de reproducción" title="Velocidad">1×</button>
+      <div class="vol-wrap">
+        <span aria-hidden="true">🔊</span>
+        <input type="range" class="vol" id="pVol" min="0" max="100" value="100" aria-label="Volumen" />
+      </div>
+      <button class="player-close" id="pClose" aria-label="Cerrar y detener el reproductor" title="Detener">✕</button>
+    </div>
+  </div>
+  <audio id="audio" preload="metadata"></audio>
+</div>
+
+<!-- ============ LIGHTBOX ============ -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada">
+  <button class="lb-close" id="lbClose" aria-label="Cerrar">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Anterior">‹</button>
+  <canvas id="lbCanvas"></canvas>
+  <button class="lb-nav lb-next" id="lbNext" aria-label="Siguiente">›</button>
+  <div class="lb-tools" id="lbTools">
+    <button data-filter="none" class="active">Original</button>
+    <button data-filter="grayscale(1)">B/N</button>
+    <button data-filter="sepia(0.7)">Sepia</button>
+    <button data-filter="saturate(1.8)">Vívido</button>
+    <button data-filter="contrast(1.4)">Contraste</button>
+    <button data-filter="hue-rotate(290deg) saturate(1.4)">Morado</button>
+    <button data-filter="brightness(1.25)">Brillo</button>
+    <button data-filter="blur(1.5px)">Difuso</button>
+    <button id="lbDownload">⬇ Descargar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-r.min.js"></script>
+<script src="assets/js/econ-data.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
