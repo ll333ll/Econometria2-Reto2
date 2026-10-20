@@ -34,6 +34,7 @@
       <li><a href="#galeria">Galería</a></li>
       <li><a href="#mapa">Mapa</a></li>
       <li><a href="#literatura">Literatura</a></li>
+      <li><a href="#documentos">Documentos</a></li>
     </ul>
   </div>
 </nav>
@@ -125,6 +126,25 @@
       <code>quarto render Reto2_Informalidad_Manrique.qmd</code> (necesitas R y los paquetes listados en la primera pestaña).
       También puedes copiar cada bloque con el botón de <em>Copiar</em> y correrlo en RStudio.
     </div>
+
+    <div class="webr-wrap reveal" style="margin-top:2rem">
+      <h3 style="color:var(--purple-800);margin-bottom:0.4rem">🧪 Consola de R en vivo (en tu navegador)</h3>
+      <p class="section-lead" style="margin-bottom:1rem">Ejecuta R de verdad aquí mismo, sin instalar nada: usa <strong>WebR</strong> (R compilado a WebAssembly). Escribe o edita el código y pulsa <em>Ejecutar</em>. Ideal para probar el núcleo del modelo probit con datos de ejemplo.</p>
+      <div class="webr-console">
+        <div class="webr-toolbar">
+          <select id="webrExample" aria-label="Ejemplo de código">
+            <option value="probit">Modelo probit de ejemplo</option>
+            <option value="descriptiva">Descriptiva ponderada</option>
+            <option value="grafico">Gráfico base</option>
+          </select>
+          <button class="btn btn-primary" id="webrRun" style="padding:0.5rem 1.2rem;font-size:0.85rem">▶ Ejecutar</button>
+          <span id="webrStatus" class="webr-status">WebR no cargado</span>
+        </div>
+        <textarea id="webrCode" class="webr-editor" spellcheck="false" aria-label="Editor de código R"></textarea>
+        <pre class="webr-out" id="webrOut">La salida de R aparecerá aquí…</pre>
+        <img id="webrPlot" class="webr-plot" alt="Gráfico generado por R" style="display:none" />
+      </div>
+    </div>
   </div>
 </section>
 
@@ -212,6 +232,56 @@
         </div>
         <button class="play-inline" data-audio="assets/audio/entrevista-jessica.mp3" data-title="Entrevista a Jessica" data-sub="Esteticista independiente · Niquía">▶ Reproducir</button>
       </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:1.6rem">
+      <div class="card reveal">
+        <button class="transcript-toggle" data-target="trAndres" aria-expanded="false">📝 Leer la reseña de Andrés <span class="chev">▾</span></button>
+        <div class="transcript" id="trAndres" hidden>
+          <p>Andrés es un trabajador informal amante de la física, los números y los retos. Estudia ingeniería mecatrónica en la Universidad de Antioquia y tiene su propio puesto de jugos de naranja y borojó sobre la calle principal, donde los combina con cola granulada y otros suplementos. Vive en Manrique hace dos años, cerca a San Pablo.</p>
+          <p>No cotiza a salud ni pensión, pero ha tenido trabajos formales en el pasado. Dejó de trabajar para empleadores porque se sentía subvalorado respecto a sus capacidades comerciales —justo el motivo por el que pasó a la informalidad—.</p>
+          <blockquote>Puede ser que hayan varias oportunidades, pero muchos empleadores no se enfocan en mirar si el trabajador está bien remunerado, si está a gusto… Y pues esa es una de las causas más grandes por las que los trabajadores, en cualquier momento, por algo insignificante, dicen: no, ya no vuelvo.</blockquote>
+          <p>Camina todos los días a su puesto (unos 25 minutos) y los disfruta, pues es amante de la actividad física. No se niega a usar el transporte público: considera que en Manrique es bastante seguro y a un precio justo. Se siente cómodo viviendo en Manrique y con sus condiciones laborales.</p>
+        </div>
+      </div>
+      <div class="card reveal d1">
+        <button class="transcript-toggle" data-target="trJessica" aria-expanded="false">📝 Leer la reseña de Jessica <span class="chev">▾</span></button>
+        <div class="transcript" id="trJessica" hidden>
+          <p>Jessica trabaja en un salón de belleza (Sara Arrieta Lashes) sobre la 45. Se dedica a la depilación, uñas y pestañas. Vive en Niquía y se demora unos 30 minutos en llegar al trabajo en Uber moto o transporte público, del cual se siente inconforme por su alto precio y el riesgo de accidentes.</p>
+          <blockquote>Yo hoy por eso trabajo independiente, porque yo viví de un mínimo. Pagar un transporte público ya se está yendo casi un 30 % del salario mínimo, entonces uno trata de buscar otros métodos para trabajar como esto.</blockquote>
+          <p>Su hija es la mayor razón por la que busca un trabajo cercano y flexible. Aprendió este arte, dice, «para tener más tiempo con mi hija». Considera su oficio un arte y recomienda a quienes buscan empleo: «Aprendan un arte, porque hoy en día trabajarle a alguien más no favorece».</p>
+          <p>No conoce bien la situación formal en Manrique —nunca ha buscado empleo formal allí ni lo buscaría— pero afirma que la mayoría de personas que conoce trabajan fuera de la comuna.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="run-note reveal" style="margin-top:1.6rem">
+      <strong>🎧 Controles del reproductor:</strong> reproduce/pausa, retrocede o adelanta 10 s (⏪ ⏩), cambia la velocidad (0.75× a 2×),
+      ajusta el volumen y arrastra la barra de progreso. Sigue sonando mientras exploras el resto de la página; ciérralo con ✕ para detenerlo.
+      Con el reproductor abierto, la barra espaciadora también pausa/reanuda.
+    </div>
+  </div>
+</section>
+
+<!-- ============ DOCUMENTOS ============ -->
+<section class="section" id="documentos">
+  <div class="container">
+    <span class="eyebrow reveal">Documentos y descargas</span>
+    <h2 class="section-title reveal">Todo el material original</h2>
+    <p class="section-lead reveal">Consulta y descarga los documentos fuente del trabajo: la reseña completa de la salida de campo, la revisión de literatura, el código reproducible y los datos recogidos.</p>
+    <div class="grid grid-4">
+      <a class="card doc-card reveal" href="assets/docs/salida-de-campo-manrique.pdf" target="_blank" rel="noopener">
+        <span class="icon">📄</span><h3>Salida de campo</h3><p>Reseña completa de la visita a Manrique (PDF).</p>
+      </a>
+      <a class="card doc-card reveal d1" href="assets/docs/revision-literatura.pdf" target="_blank" rel="noopener">
+        <span class="icon">📚</span><h3>Revisión de literatura</h3><p>Marco teórico y fuentes (PDF).</p>
+      </a>
+      <a class="card doc-card reveal d2" href="assets/data/Reto2_Informalidad_Manrique.qmd" download>
+        <span class="icon">⚙️</span><h3>Código fuente</h3><p>Documento Quarto con todo el análisis en R (.qmd).</p>
+      </a>
+      <a class="card doc-card reveal d3" href="assets/data/entrevistados.txt" download>
+        <span class="icon">🗃️</span><h3>Datos de campo</h3><p>Resumen de las personas entrevistadas (.txt).</p>
+      </a>
     </div>
   </div>
 </section>
@@ -342,5 +412,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-r.min.js"></script>
 <script src="assets/js/econ-data.js"></script>
 <script src="assets/js/app.js"></script>
+<script type="module" src="assets/js/webr-runner.js"></script>
 </body>
 </html>

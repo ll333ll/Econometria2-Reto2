@@ -35,7 +35,7 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 12px); }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 12px); overflow-x: hidden; }
 
 body {
   font-family: var(--font);
@@ -166,11 +166,11 @@ blockquote {
 }
 blockquote cite { display: block; margin-top: 0.5rem; font-style: normal; font-weight: 600; color: var(--pink-600); font-size: 0.9rem; }
 
-.hyp-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.93rem; overflow: hidden; border-radius: 14px; box-shadow: var(--shadow-sm); }
+.hyp-table { width: 100%; min-width: 460px; border-collapse: collapse; margin: 1rem 0; font-size: 0.93rem; overflow: hidden; border-radius: 14px; box-shadow: var(--shadow-sm); }
 .hyp-table th { background: var(--grad-main); color: #fff; padding: 0.8rem; text-align: left; }
 .hyp-table td { padding: 0.75rem 0.8rem; border-bottom: 1px solid #f0e0f5; }
 .hyp-table tr:nth-child(even) td { background: #faf2fe; }
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; border-radius: 14px; }
 
 /* ---------- Audio player ---------- */
 .player {
@@ -352,3 +352,26 @@ footer .fine { font-size: 0.82rem; color: #c9a8e0; margin-top: 1rem; }
 /* focus visibility for accessibility */
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--pink-400); outline-offset: 2px; border-radius: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* ---------- WebR live console ---------- */
+.webr-console { background: #fff; border-radius: var(--radius); padding: 1.4rem; box-shadow: var(--shadow-sm); border: 1px solid rgba(155,77,212,0.12); }
+.webr-toolbar { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.webr-toolbar select { font-family: var(--font); padding: 0.5rem 0.9rem; border-radius: 999px; border: 1.5px solid rgba(155,77,212,0.3); background: #fff; color: var(--purple-700); font-weight: 600; cursor: pointer; }
+.webr-status { font-size: 0.82rem; color: var(--muted); margin-left: auto; }
+.webr-editor { width: 100%; min-height: 220px; resize: vertical; font-family: "Fira Code", Menlo, Consolas, monospace; font-size: 0.85rem; line-height: 1.55; padding: 1rem; border-radius: 12px; border: 1.5px solid rgba(155,77,212,0.25); background: #2b0a3d; color: #ffd0ea; tab-size: 2; }
+.webr-editor:focus { outline: 3px solid var(--pink-400); outline-offset: 1px; }
+.webr-out { background: #1b0626; color: #b0ffd9; padding: 1rem; border-radius: 12px; margin: 1rem 0 0; font-size: 0.82rem; max-height: 320px; overflow: auto; white-space: pre-wrap; box-shadow: none; }
+.webr-plot { margin-top: 1rem; border-radius: 12px; box-shadow: var(--shadow-sm); background: #fff; }
+
+/* ---------- Transcripts ---------- */
+.transcript-toggle { background: var(--grad-soft); border: 0; color: var(--purple-700); font-weight: 600; font-family: var(--font); padding: 0.7rem 1.1rem; border-radius: 12px; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+.transcript-toggle:hover { background: var(--pink-200); }
+.transcript-toggle .chev { transition: transform 0.3s ease; }
+.transcript-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.transcript { margin-top: 1rem; animation: fadeIn 0.3s ease; }
+.transcript p { color: #3a2545; margin-bottom: 0.8rem; font-size: 0.95rem; }
+
+/* ---------- Doc cards ---------- */
+.doc-card { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.doc-card:hover { color: var(--ink); }
+.doc-card h3 { color: var(--purple-700); }

@@ -92,6 +92,17 @@
   );
   $$("[data-count]").forEach((el) => countObs.observe(el));
 
+  /* ---------- Transcript toggles ---------- */
+  $$(".transcript-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const panel = document.getElementById(btn.dataset.target);
+      if (!panel) return;
+      const open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+      panel.hidden = open;
+    });
+  });
+
   /* ============================================================
      CÓDIGO ECONOMÉTRICO (pestañas)
      ============================================================ */
