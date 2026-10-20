@@ -92,6 +92,73 @@
   );
   $$("[data-count]").forEach((el) => countObs.observe(el));
 
+  /* ============================================================
+     SIMULADOR PROBIT INTERACTIVO (ilustrativo)
+     Calcula P(informal) = Phi(z) con coeficientes del sentido
+     esperado por la literatura. Educativo, no sustituye el .qmd.
+     ============================================================ */
+  (function predictor() {
+    const wrap = $("#predictor");
+    if (!wrap) return;
+    // standard normal CDF (Phi) via erf approximation
+    const phi = (x) => {
+      const t = 1 / (1 + 0.2316419 * Math.abs(x));
+      const d = 0.3989423 * Math.exp((-x * x) / 2);
+      let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+      return x > 0 ? 1 - p : p;
+    };
+    // Calibrated illustrative coefficients (probit scale, centered vars).
+    // Default profile (tiempo 30, educ 11, edad 35, usa TP) ≈ 55%, cercano a
+    // la tasa de informalidad de Manrique; cada control mueve la probabilidad
+    // en el sentido esperado por la literatura.
+    const B = { int: -0.362, tiempo: 0.06, educ: -0.09, tp: 0.35, mujer: 0.18, casado: -0.30, moto: -0.28, edad: -0.02, edad2: 0.0015 };
+
+    const el = {
+      tiempo: $("#prTiempo"), educ: $("#prEduc"), edad: $("#prEdad"),
+      tp: $("#prTP"), mujer: $("#prMujer"), casado: $("#prCasado"), moto: $("#prMoto"),
+      vTiempo: $("#pvTiempo"), vEduc: $("#pvEduc"), vEdad: $("#pvEdad"),
+      ring: $("#gaugeRing"), val: $("#gaugeVal"), verdict: $("#gaugeVerdict"),
+    };
+
+    const toggle = (btn) => {
+      const on = btn.classList.toggle("active");
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      update();
+    };
+
+    function update() {
+      const tiempo = +el.tiempo.value, educ = +el.educ.value, edad = +el.edad.value;
+      el.vTiempo.textContent = tiempo;
+      el.vEduc.textContent = educ;
+      el.vEdad.textContent = edad;
+      const tp = el.tp.classList.contains("active") ? 1 : 0;
+      const mujer = el.mujer.classList.contains("active") ? 1 : 0;
+      const casado = el.casado.classList.contains("active") ? 1 : 0;
+      const moto = el.moto.classList.contains("active") ? 1 : 0;
+      const zc = B.int
+        + B.tiempo * (tiempo - 30) / 10
+        + B.educ * (educ - 11)
+        + B.tp * tp
+        + B.mujer * mujer
+        + B.casado * casado
+        + B.moto * moto
+        + B.edad * (edad - 40) + B.edad2 * (edad - 40) * (edad - 40);
+      const p = Math.max(0, Math.min(1, phi(zc)));
+      const pct = Math.round(p * 100);
+      el.val.textContent = pct + "%";
+      const deg = p * 360;
+      const color = pct < 40 ? "#2bb673" : pct < 65 ? "#f0a030" : "#f0409b";
+      el.ring.style.background = `conic-gradient(${color} ${deg}deg, #f0e0f5 ${deg}deg)`;
+      el.verdict.className = "gauge-verdict " + (pct < 40 ? "low" : pct < 65 ? "mid" : "high");
+      el.verdict.textContent = pct < 40 ? "Perfil con menor riesgo de informalidad"
+        : pct < 65 ? "Riesgo intermedio de informalidad" : "Perfil con mayor riesgo de informalidad";
+    }
+
+    [el.tiempo, el.educ, el.edad].forEach((s) => s.addEventListener("input", update));
+    [el.tp, el.mujer, el.casado, el.moto].forEach((b) => b.addEventListener("click", () => toggle(b)));
+    update();
+  })();
+
   /* ---------- Scroll progress + back to top ---------- */
   (function scrollFx() {
     const bar = $("#scrollProgress");

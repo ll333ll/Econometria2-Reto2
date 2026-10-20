@@ -181,6 +181,40 @@
       </div>
     </div>
     <p style="margin-top:1rem;color:var(--muted);font-size:0.85rem" class="reveal">Los gráficos ilustran la forma y el sentido de los resultados del documento Quarto. Las cifras exactas se obtienen al renderizar el <code>.qmd</code> con la base ECV 2025 completa.</p>
+
+    <div class="predictor reveal" id="predictor">
+      <h3>🎛️ Simulador interactivo del modelo probit</h3>
+      <p class="pred-intro">Mueve los controles y mira cómo cambia la <strong>probabilidad predicha de informalidad</strong> según el perfil de la persona. Usa la estructura de un probit ilustrativo (coeficientes del sentido esperado); no reemplaza la estimación real del <code>.qmd</code>, pero deja ver la mecánica del modelo.</p>
+      <div class="pred-grid">
+        <div class="pred-controls">
+          <label class="pred-field">
+            <span class="pred-label">Tiempo de viaje al trabajo: <strong id="pvTiempo">30</strong> min</span>
+            <input type="range" id="prTiempo" min="0" max="120" value="30" step="5" />
+          </label>
+          <label class="pred-field">
+            <span class="pred-label">Años de educación: <strong id="pvEduc">11</strong></span>
+            <input type="range" id="prEduc" min="0" max="21" value="11" step="1" />
+          </label>
+          <label class="pred-field">
+            <span class="pred-label">Edad: <strong id="pvEdad">35</strong> años</span>
+            <input type="range" id="prEdad" min="16" max="70" value="35" step="1" />
+          </label>
+          <div class="pred-toggles">
+            <button class="pred-toggle active" id="prTP" aria-pressed="true">🚍 Usa transporte público</button>
+            <button class="pred-toggle" id="prMujer" aria-pressed="false">👩 Es mujer</button>
+            <button class="pred-toggle" id="prCasado" aria-pressed="false">💍 Casado / unión libre</button>
+            <button class="pred-toggle" id="prMoto" aria-pressed="false">🏍️ Hogar con moto</button>
+          </div>
+        </div>
+        <div class="pred-gauge">
+          <div class="gauge-ring" id="gaugeRing">
+            <div class="gauge-val" id="gaugeVal">—</div>
+            <div class="gauge-cap">prob. informalidad</div>
+          </div>
+          <div class="gauge-verdict" id="gaugeVerdict"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 

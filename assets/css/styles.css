@@ -353,6 +353,35 @@ footer .fine { font-size: 0.82rem; color: #c9a8e0; margin-top: 1rem; }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--pink-400); outline-offset: 2px; border-radius: 6px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
+/* ---------- Interactive probit predictor ---------- */
+.predictor { background: #fff; border-radius: var(--radius); padding: clamp(1.4rem,4vw,2.4rem); box-shadow: var(--shadow-md); margin-top: 2rem; border: 1px solid rgba(155,77,212,0.12); }
+.predictor h3 { color: var(--purple-800); margin-bottom: 0.4rem; }
+.pred-intro { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.6rem; }
+.pred-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; }
+@media (min-width: 820px) { .pred-grid { grid-template-columns: 1.3fr 1fr; } }
+.pred-field { display: block; margin-bottom: 1.2rem; }
+.pred-label { display: block; font-size: 0.92rem; color: var(--purple-700); margin-bottom: 0.5rem; font-weight: 500; }
+.pred-label strong { color: var(--pink-600); }
+.pred-field input[type="range"] { width: 100%; }
+.pred-toggles { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.4rem; }
+.pred-toggle { background: var(--grad-soft); border: 2px solid transparent; color: var(--purple-700); padding: 0.55rem 1rem; border-radius: 999px; cursor: pointer; font-family: var(--font); font-weight: 600; font-size: 0.85rem; transition: 0.2s; }
+.pred-toggle:hover { border-color: var(--pink-300); }
+.pred-toggle.active { background: var(--grad-main); color: #fff; }
+.pred-gauge { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.gauge-ring {
+  width: 190px; height: 190px; border-radius: 50%;
+  display: grid; place-items: center; position: relative;
+  background: conic-gradient(var(--pink-500) 0deg, #f0e0f5 0deg);
+  transition: background 0.5s ease;
+}
+.gauge-ring::after { content: ""; position: absolute; inset: 18px; background: #fff; border-radius: 50%; box-shadow: inset 0 2px 10px rgba(99,33,161,0.1); }
+.gauge-val { position: relative; z-index: 2; font-size: 2.6rem; font-weight: 800; background: var(--grad-main); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.gauge-cap { position: relative; z-index: 2; font-size: 0.75rem; color: var(--muted); margin-top: -0.3rem; }
+.gauge-verdict { text-align: center; font-weight: 600; padding: 0.5rem 1.1rem; border-radius: 999px; font-size: 0.9rem; transition: 0.3s; }
+.gauge-verdict.low { background: #e6f7ee; color: #1c7a4a; }
+.gauge-verdict.mid { background: #fff3e0; color: #b4690e; }
+.gauge-verdict.high { background: #fde8f1; color: var(--pink-600); }
+
 /* ---------- Scroll progress + back to top ---------- */
 .scroll-progress { position: fixed; top: 0; left: 0; height: 4px; width: 0%; background: var(--grad-main); z-index: 1100; transition: width 0.1s linear; box-shadow: 0 0 10px var(--pink-400); }
 .to-top {
