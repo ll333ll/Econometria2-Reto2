@@ -92,6 +92,21 @@
   );
   $$("[data-count]").forEach((el) => countObs.observe(el));
 
+  /* ---------- Scroll progress + back to top ---------- */
+  (function scrollFx() {
+    const bar = $("#scrollProgress");
+    const toTop = $("#toTop");
+    const onScroll = () => {
+      const h = document.documentElement;
+      const scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+      if (bar) bar.style.width = Math.min(100, scrolled * 100) + "%";
+      if (toTop) toTop.classList.toggle("show", h.scrollTop > 600);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    if (toTop) toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  })();
+
   /* ---------- Transcript toggles ---------- */
   $$(".transcript-toggle").forEach((btn) => {
     btn.addEventListener("click", () => {
