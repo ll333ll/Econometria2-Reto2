@@ -1,0 +1,415 @@
+---
+title: "Del barrio al trabajo: tiempo de viaje e informalidad laboral en Manrique"
+subtitle: "Reto 2 · Econometría II · ECV Medellín 2025"
+author:
+  - Dulce María Sánchez
+  - Elisa Medina
+  - José Alejandro Jiménez
+  - Anny Aristizábal
+date: today
+date-format: long
+lang: es
+format:
+  html:
+    theme: flatly
+    toc: true
+    toc-title: "Contenido"
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Ver código"
+    fig-align: center
+    fig-width: 8
+    fig-height: 5
+    embed-resources: true
+    include-in-header:
+      - text: |
+          <style>
+            h1, h2, h3 { color: #5B4A6B; }
+            .title { font-weight: 800; color: #5B4A6B; }
+            .subtitle { color: #B0547F; font-weight: 600; }
+            table { font-size: 0.92rem; }
+          </style>
+execute:
+  warning: false
+  message: false
+---
+
+# Introducción
+
+Uno de los problemas estructurales del trabajo en Medellín, es la informalidad laboral. Según la Encuesta de Calidad de Vida (ECVS) 2025, el 53,2% de los ocupados que habitan en Manrique (comuna 3) no cotizan a pensión. Esta es la tasa más alta frente a las 16 comunas y se puede explicar por varios motivos. Por ejemplo, Manrique es una comuna de ladera, lo que la ubica lejos de los lugares donde hay una mayor frecuencia del mercado formal (Gallego Ortiz et al., 2019).
+
+Por lo tanto, desarrollamos una hipótesis geográfica de spatial mismatch propuesta por Kain (1968), formulada para afromearicaos en ciudades Estadounidenses, sin embargo, se hace la analogía con Medellín: el tipo de empleo que busco y puedo conseguir, está condicionado a donde vivo y que tan fácil es el acceso al trabajo. Es decir, hay una brecha entre donde se vive y donde están concentrados los empleos.
+
+Para Colombia hay evidencia cercana. En 2017, en Bogotá se hizo un estudio con la Encuesta Multipropósito y se encontró que entre mas desconexión espacial tengas entre los centros de empleo formal y tu vivienda, menos probabilidad tendrás de acceder a los centros de empleo formal, y que el resultado se mantiene al corregir por endogeneidad (Universidad Nacional de Colombia, repositorio).
+
+Ahora, se propone la siguiente pregunta de investigación: ¿cómo se relacionan el tiempo de viaje al trabajo y el uso de transporte público con la probabilidad de tener un empleo informal en Manrique?
+
+Se esperan tres principales conclusiones. En primer lugar, el tiempo de viaje se debe asociar negativamente con el trabajo informal, siguiendo la lógica de Kain. Segundo, la informalidad y el uso del transporte público, debe de estar relacionado positivamente, porque usualmente, el que cuenta con vehículo propio suele tener mayores ingresos. Por último, los años de educación y el trabajo informal deben de tener una relación negativa, pues un mayor capital humano debería garantizar acceso a empleos formales.
+
+A continuación, se especificará la estimación de estas relaciones con un modelo probit, los efectos marginales y la endogeneidad del transporte público con una función de control.
+
+Manrique (comuna 3) tiene la tasa de informalidad laboral más alta de Medellín y una de las distancias más largas a los centros de empleo formal. Estudiamos si el tiempo de viaje al trabajo y el uso de transporte público se relacionan con la probabilidad de que un ocupado de Manrique sea informal, es decir, que no cotice a pensión.
+
+**Pregunta:** ¿cómo se relacionan el tiempo de viaje al trabajo y el uso de transporte público con la probabilidad de tener un empleo informal en Manrique?
+
+| Variable | Signo esperado | Razón |
+|------------------------|------------------------|------------------------|
+| Tiempo de viaje | Negativo | El empleo formal está lejos de la comuna. El informal suele estar cerca de casa. |
+| Transporte público | Positivo | Quien no tiene vehículo propio suele tener menores ingresos. |
+| Años de educación | Negativo | Más capital humano da acceso a empleos formales. |
+
+# Datos
+
+```{r}
+#| label: paquetes
+paquetes <- c("tidyverse", "readxl", "scales", "patchwork", "marginaleffects",
+              "modelsummary", "tinytable", "pROC", "ResourceSelection")
+faltan <- setdiff(paquetes, rownames(installed.packages()))
+if (length(faltan) > 0) install.packages(faltan, repos = "https://cloud.r-project.org")
+
+library(tidyverse)
+library(readxl)
+library(scales)
+library(patchwork)
+library(marginaleffects)
+
+col_morado <- "#5B4A6B"
+col_rosa   <- "#C65D8E"
+col_gris   <- "#A79FAE"
+col_claro  <- "#EFE6EE"
+
+theme_set(theme_minimal(base_size = 12) +
+            theme(plot.title = element_text(face = "bold", colour = col_morado),
+                  legend.position = "bottom"))
+
+w_mean <- function(x, w) weighted.mean(x, w, na.rm = TRUE)
+```
+
+```{r}
+#| label: lectura
+archivo <- "ECV_2025.xlsx"
+if (!file.exists(archivo)) archivo <- list.files(pattern = "ECV.*2025.*\\.xlsx$", ignore.case = TRUE)[1]
+
+ecv_raw <- read_excel(archivo, guess_max = 25000)
+names(ecv_raw) <- gsub("\\.", "", names(ecv_raw))   # A.7 -> A7
+ecv_raw <- filter(ecv_raw, !is.na(NoForm))           # 2 filas vacías al final
+
+# -99 no responde, -98 no sabe, -88 no aplica (-77 = "otro" es válido)
+ecv <- ecv_raw |>
+  mutate(across(where(is.numeric), ~ if_else(.x %in% c(-99, -98, -88, -888), NA_real_, .x)))
+```
+
+## Colapso por vivienda y hogar
+
+Colapsamos la base por vivienda (`NoForm`) y por hogar (`NoForm`, `Hogar`), y luego unimos todo a la base de personas.
+
+```{r}
+#| label: colapso
+viviendas <- ecv |>
+  arrange(NoForm, Hogar, persona) |>
+  group_by(NoForm) |>
+  summarise(personas_viv = n(),
+            comuna  = first(A7),
+            estrato = first(A10),
+            fev     = first(FEV),
+            .groups = "drop")
+
+hogares <- ecv |>
+  arrange(NoForm, Hogar, persona) |>
+  group_by(NoForm, Hogar) |>
+  summarise(personas_hog = n(),
+            tiene_moto   = as.integer(first(J29) > 0),
+            tiene_auto   = as.integer(first(J28) > 0),
+            feh          = first(FEH),
+            .groups = "drop")
+
+tibble(
+  Nivel = c("Viviendas", "Hogares", "Personas"),
+  `Registros` = c(nrow(viviendas), nrow(hogares), nrow(ecv)),
+  `Ficha técnica 2025` = c(6948, 6955, 20408),
+  `Total expandido` = c(sum(viviendas$fev), sum(hogares$feh), sum(ecv$FEP))
+) |> knitr::kable(format.args = list(big.mark = "."))
+```
+
+Los registros coinciden con la ficha técnica de la encuesta 2025 y la población expandida (2.634.570 personas) con la cifra oficial de 2025.
+
+## Construcción de variables
+
+```{r}
+#| label: variables
+anios_educ <- c("0" = 0, "1" = 1, "2" = 5, "3" = 9, "4" = 11, "5" = 12,
+                "6" = 14, "7" = 16, "8" = 17, "9" = 18, "10" = 21)
+
+base <- ecv |>
+  select(NoForm, Hogar, persona, B2, B5, B6, B7, E6, F2, H31, H36, H37, fep = FEP) |>
+  left_join(hogares, by = c("NoForm", "Hogar")) |>
+  left_join(viviendas, by = "NoForm") |>
+  filter(comuna %in% 1:16) |>                      # sin corregimientos
+  mutate(
+    mujer        = as.integer(B2 == 2),
+    edad         = B6,
+    casado_union = as.integer(B7 %in% c(2, 5, 6)),
+    educ_anios   = unname(anios_educ[as.character(E6)]),
+    educ_nivel   = cut(educ_anios, c(-1, 5, 9, 12, 30),
+                       labels = c("Primaria o menos", "Secundaria", "Media", "Superior")),
+    estrato_cat  = factor(pmin(estrato, 3), 1:3, c("Estrato 1", "Estrato 2", "Estrato 3+")),
+    ocupado      = as.integer(H31 %in% 1:4),
+    tipo_ocup    = case_when(H31 %in% 1:2 ~ "Asalariado", H31 %in% 3:4 ~ "Cuenta propia"),
+    informal     = if_else(ocupado == 1, as.integer(F2 == 2), NA_integer_),
+    tiempo       = H37,
+    tiempo_10    = H37 / 10,
+    tp_publico   = if_else(is.na(H36), NA_integer_, as.integer(H36 %in% c(4, 6, 8, 9))),
+    modo = case_when(
+      H36 %in% c(1, 2) ~ "A pie / bici",
+      H36 %in% c(8, 9) ~ "Metro / Cable / SIT",
+      H36 %in% c(4, 6) ~ "Bus / taxi",
+      H36 %in% c(3, 7) ~ "Moto / carro",
+      !is.na(H36)      ~ "Otro"
+    )
+  )
+
+ocupados <- base |> filter(ocupado == 1, between(edad, 15, 70))
+manrique <- ocupados |> filter(comuna == 3)
+
+datos_modelo <- manrique |>
+  drop_na(informal, tiempo, tp_publico, mujer, edad, educ_anios, casado_union, estrato_cat)
+
+tibble(Paso = c("Personas en las 16 comunas", "Personas en Manrique",
+                "Ocupados de 15 a 70 años en Manrique", "Muestra del modelo"),
+       n = c(nrow(base), sum(base$comuna == 3), nrow(manrique), nrow(datos_modelo))) |>
+  knitr::kable()
+```
+
+# Estadísticas descriptivas
+
+## Manrique frente a Medellín
+
+```{r}
+#| label: comunas
+comunas <- ocupados |>
+  group_by(comuna) |>
+  summarise(informalidad = w_mean(informal, fep), tiempo = w_mean(tiempo, fep)) |>
+  mutate(nombre = c("Popular", "Santa Cruz", "Manrique", "Aranjuez", "Castilla",
+                    "Doce de Octubre", "Robledo", "Villa Hermosa", "Buenos Aires",
+                    "La Candelaria", "Laureles", "La América", "San Javier",
+                    "El Poblado", "Guayabal", "Belén")[comuna])
+
+ggplot(comunas, aes(informalidad, fct_reorder(nombre, informalidad), fill = comuna == 3)) +
+  geom_col(width = .75) +
+  geom_text(aes(label = percent(informalidad, 1)), hjust = -0.15, size = 3.2) +
+  scale_fill_manual(values = c(`FALSE` = col_gris, `TRUE` = col_rosa), guide = "none") +
+  scale_x_continuous(labels = percent, expand = expansion(mult = c(0, .12))) +
+  labs(title = "Informalidad laboral por comuna (no cotiza a pensión)", x = NULL, y = NULL)
+```
+
+Manrique es la comuna con mayor informalidad de Medellín: `r percent(comunas$informalidad[comunas$comuna == 3], 0.1)` de sus ocupados no cotiza a pensión, frente a `r percent(min(comunas$informalidad), 0.1)` en El Poblado. Sus ocupados tardan en promedio `r round(comunas$tiempo[comunas$comuna == 3])` minutos en llegar al trabajo.
+
+## Perfil del trabajador formal e informal
+
+```{r}
+#| label: perfil
+perfil <- manrique |>
+  filter(!is.na(informal)) |>
+  group_by(Condición = if_else(informal == 1, "Informal", "Formal")) |>
+  summarise(n = n(),
+            `Minutos de viaje`        = w_mean(tiempo, fep),
+            `% transporte público`    = 100 * w_mean(tp_publico, fep),
+            `% cuenta propia`         = 100 * w_mean(tipo_ocup == "Cuenta propia", fep),
+            `Años de educación`       = w_mean(educ_anios, fep),
+            `Edad`                    = w_mean(edad, fep),
+            `% mujeres`               = 100 * w_mean(mujer, fep))
+
+perfil |> mutate(across(where(is.double), ~ round(.x, 1))) |> knitr::kable()
+```
+
+El informal de Manrique viaja menos, usa menos el transporte público, tiene menos educación y sobre todo, trabaja por cuenta propia. El sexo y la edad casi no los diferencian.
+
+## Tiempo de viaje
+
+```{r}
+#| label: tiempo
+manrique |>
+  filter(!is.na(informal), tiempo <= quantile(tiempo, .99, na.rm = TRUE)) |>
+  mutate(Condición = if_else(informal == 1, "Informal", "Formal")) |>
+  ggplot(aes(tiempo, fill = Condición, weight = fep)) +
+  geom_density(alpha = .6, colour = NA) +
+  scale_fill_manual(values = c(Formal = col_morado, Informal = col_rosa), name = NULL) +
+  labs(title = "Tiempo de viaje al trabajo en Manrique", x = "Minutos", y = "Densidad")
+```
+
+Los informales se concentran en trayectos cortos (menos de 20 minutos). Los formales tienen trayectos más largos, consistentes con empleos fuera de la comuna.
+
+## Informalidad por modo, ocupación y educación
+
+```{r}
+#| label: tasas
+#| fig-height: 7
+tasa <- function(var, titulo) {
+  manrique |>
+    filter(!is.na({{ var }}), !is.na(informal)) |>
+    group_by(g = {{ var }}) |>
+    summarise(tasa = w_mean(informal, fep), n = n()) |>
+    ggplot(aes(tasa, fct_reorder(g, tasa))) +
+    geom_col(fill = col_morado, width = .7) +
+    geom_text(aes(label = paste0(percent(tasa, 1), " (n=", n, ")")), hjust = -0.1, size = 3) +
+    scale_x_continuous(labels = percent, limits = c(0, 1.2), breaks = seq(0, 1, .25)) +
+    labs(title = titulo, x = NULL, y = NULL)
+}
+
+tasa(modo, "Modo de transporte") /
+  (tasa(tipo_ocup, "Tipo de ocupación") | tasa(as.character(educ_nivel), "Nivel educativo"))
+```
+
+`r percent(with(filter(manrique, modo == "A pie / bici"), w_mean(informal, fep)), 1)` de quienes van a pie o en bicicleta es informal, frente a `r percent(with(filter(manrique, modo == "Metro / Cable / SIT"), w_mean(informal, fep)), 1)` de quienes usan Metro, Cable o SIT. El sistema masivo conecta a Manrique con el empleo formal, mientras que quien camina trabaja en el barrio. La informalidad también cae con fuerza a medida que aumenta la educación.
+
+# Modelo econométrico
+
+Como la variable dependiente es binaria (1 = informal), estimamos un probit:
+
+$$
+\begin{aligned}
+P(\text{informal}_i = 1) = \Phi\big(&\beta_0 + \beta_1\,\text{tiempo}_i + \beta_2\,\text{TP}_i + \beta_3\,\text{mujer}_i + \beta_4\,\text{edad}_i + \beta_5\,\text{edad}_i^2 \\
+&+ \beta_6\,\text{educ}_i + \beta_7\,\text{casado}_i + \beta_8\,\text{estrato2}_i + \beta_9\,\text{estrato3}_i\big)
+\end{aligned}
+$$
+
+donde $\Phi$ es la función de distribución normal estándar y:
+
+- $\text{tiempo}_i$: minutos de viaje al trabajo, en bloques de 10 minutos.
+- $\text{TP}_i$: 1 si va al trabajo en bus, taxi, metro, cable o SIT.
+- $\text{mujer}_i$: 1 si es mujer.
+- $\text{edad}_i$ y $\text{edad}_i^2$: edad en años y su cuadrado.
+- $\text{educ}_i$: años de educación aprobados.
+- $\text{casado}_i$: 1 si es casado o vive en unión libre.
+- $\text{estrato2}_i$ y $\text{estrato3}_i$: estrato 2 y estrato 3 o más (la base es estrato 1).
+
+Estimamos el modelo A (solo tiempo, $\beta_2 = 0$), el B (solo transporte público, $\beta_1 = 0$) y el C (ambos).
+
+```{r}
+#| label: modelos
+controles <- "mujer + edad + I(edad^2) + educ_anios + casado_union + estrato_cat"
+probit <- binomial(link = "probit")
+
+m_A <- glm(as.formula(paste("informal ~ tiempo_10 +", controles)), probit, datos_modelo)
+m_B <- glm(as.formula(paste("informal ~ tp_publico +", controles)), probit, datos_modelo)
+m_C <- glm(as.formula(paste("informal ~ tiempo_10 + tp_publico +", controles)), probit, datos_modelo)
+
+nombres <- c("tiempo_10" = "Tiempo de viaje (+10 min)", "tp_publico" = "Transporte público",
+             "mujer" = "Mujer", "edad" = "Edad", "I(edad^2)" = "Edad²",
+             "educ_anios" = "Años de educación", "casado_union" = "Casado / unión",
+             "estrato_catEstrato 2" = "Estrato 2", "estrato_catEstrato 3+" = "Estrato 3+",
+             "(Intercept)" = "Constante")
+
+modelsummary::modelsummary(list("A" = m_A, "B" = m_B, "C" = m_C),
+                           coef_rename = nombres, stars = TRUE,
+                           gof_map = c("nobs", "logLik", "AIC"),
+                           title = "Probit: coeficientes (variable dependiente: informal)")
+```
+
+## Efectos marginales promedio (AME)
+
+```{r}
+#| label: ame
+ame_C <- avg_slopes(m_C)
+
+ame_C |>
+  as_tibble() |>
+  mutate(Variable = if_else(term == "estrato_cat", contrast, nombres[term])) |>
+  transmute(Variable,
+            `Efecto (pp)` = round(100 * estimate, 2),
+            `IC 95%` = paste0("[", round(100 * conf.low, 1), " ; ", round(100 * conf.high, 1), "]"),
+            `p-valor` = round(p.value, 3)) |>
+  knitr::kable(caption = "Modelo C: efectos marginales promedio en puntos porcentuales")
+
+ame <- function(m, k) filter(as_tibble(avg_slopes(m)), term == k)
+a_t <- ame(m_C, "tiempo_10"); a_tp <- ame(m_C, "tp_publico"); a_e <- ame(m_C, "educ_anios")
+```
+
+- **Tiempo de viaje:** cada 10 minutos adicionales reducen la probabilidad de ser informal en `r round(-100 * a_t$estimate, 1)` puntos porcentuales (p = `r round(a_t$p.value, 3)`).
+- **Transporte público:** ir al trabajo en bus, metro, cable o SIT reduce la probabilidad de ser informal en `r round(-100 * a_tp$estimate, 1)` pp (p = `r round(a_tp$p.value, 3)`). El signo es contrario al esperado: el transporte público funciona como acceso al empleo formal.
+- **Educación:** cada año adicional reduce la probabilidad en `r round(-100 * a_e$estimate, 1)` pp (p \< 0,001).
+
+```{r}
+#| label: prediccion
+predictions(m_C, newdata = datagrid(tiempo_10 = seq(0, 12, by = .5), tp_publico = 0:1)) |>
+  as_tibble() |>
+  mutate(Medio = if_else(tp_publico == 1, "Transporte público", "Otro medio")) |>
+  ggplot(aes(tiempo_10 * 10, estimate, colour = Medio, fill = Medio)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .15, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_colour_manual(values = c(col_rosa, col_morado), name = NULL) +
+  scale_fill_manual(values = c(col_rosa, col_morado), name = NULL) +
+  scale_y_continuous(labels = percent) +
+  labs(title = "Probabilidad predicha de ser informal", x = "Minutos de viaje al trabajo", y = "P(informal)")
+```
+
+## Bondad de ajuste
+
+```{r}
+#| label: ajuste
+ajuste <- function(m, nombre) {
+  y <- m$y; p <- fitted(m)
+  tibble(Modelo = nombre,
+         `Pseudo-R²` = 1 - m$deviance / m$null.deviance,
+         AUC = as.numeric(pROC::auc(pROC::roc(y, p, quiet = TRUE))),
+         `% bien clasificados` = 100 * mean((p >= mean(y)) == y),
+         `p Hosmer-Lemeshow` = ResourceSelection::hoslem.test(y, p)$p.value)
+}
+
+bind_rows(ajuste(m_A, "A"), ajuste(m_B, "B"), ajuste(m_C, "C")) |>
+  mutate(across(where(is.double), ~ round(.x, 3))) |>
+  knitr::kable()
+```
+
+El modelo C es el de mejor ajuste. La prueba de Hosmer–Lemeshow no rechaza que el modelo ajuste bien (p \> 0,05), y el umbral de clasificación es la tasa observada de informalidad.
+
+# Corrección por endogeneidad
+
+El uso de transporte público puede ser endógeno: quien tiene un empleo informal cerca de casa no necesita el bus o el metro. Lo corregimos con un **probit con función de control**, la versión de variables instrumentales para modelos de elección discreta:
+
+1.  **Primera etapa:** regresamos `tp_publico` en los instrumentos y los controles. Los instrumentos son tener moto y tener carro en el hogar, que cambian el medio de transporte.
+2.  **Segunda etapa:** incluimos el residuo de la primera etapa en el probit. Si el residuo es significativo, hay evidencia de endogeneidad.
+
+```{r}
+#| label: endogeneidad
+etapa1 <- lm(as.formula(paste("tp_publico ~ tiene_moto + tiene_auto + tiempo_10 +", controles)),
+             data = datos_modelo)
+sin_iv <- lm(as.formula(paste("tp_publico ~ tiempo_10 +", controles)), data = datos_modelo)
+F_iv   <- anova(sin_iv, etapa1)$F[2]
+
+datos_modelo$residuo <- resid(etapa1)
+m_IV <- glm(as.formula(paste("informal ~ tiempo_10 + tp_publico + residuo +", controles)),
+            probit, datos_modelo)
+
+p_res <- summary(m_IV)$coefficients["residuo", 4]
+
+bind_rows(
+  as_tibble(avg_slopes(m_C, variables = c("tiempo_10", "tp_publico"))) |> mutate(Modelo = "Probit (C)"),
+  as_tibble(avg_slopes(m_IV, variables = c("tiempo_10", "tp_publico"))) |> mutate(Modelo = "Función de control")
+) |>
+  transmute(Modelo, Variable = nombres[term],
+            `Efecto (pp)` = round(100 * estimate, 2), `p-valor` = round(p.value, 3)) |>
+  knitr::kable(caption = "Efectos marginales con y sin corrección por endogeneidad")
+```
+
+```{r}
+#| label: endog-num
+iv_t  <- ame(m_IV, "tiempo_10")
+iv_tp <- ame(m_IV, "tp_publico")
+```
+
+Los instrumentos son relevantes en la primera etapa (F = `r round(F_iv, 1)`, por encima de 10). El residuo tiene p = `r round(p_res, 3)`, evidencia `r if (p_res < .05) "significativa" else if (p_res < .1) "débil (al 10%)" else "nula"` de endogeneidad del transporte público. Al corregir:
+
+- el efecto del **tiempo de viaje** se mantiene y es significativo: `r round(100 * iv_t$estimate, 1)` pp por cada 10 minutos (p = `r round(iv_t$p.value, 3)`);
+- el efecto del **transporte público** `r if (iv_tp$p.value < .05) "sigue siendo significativo" else "deja de ser significativo"` (p = `r round(iv_tp$p.value, 3)`). Una vez se corrige, lo que pesa es la distancia al empleo, no el medio en sí.
+
+La exclusión de los instrumentos supone que tener moto o carro solo afecta la informalidad a través del medio de transporte, una vez controlamos por educación y estrato.
+
+# Conclusiones
+
+Al Manrique tener la mayor informalidad en Medellín con un `r percent(comunas$informalidad[comunas$comuna == 3], 0.1)` se evidencia: el típico informal trabaja por cuenta propia, cerca de su casa y cuenta con menos educación que el formal. La educación se consolida como el determinante individual más robusto de la formalidad, reduciendo la probabilidad de ser informal en 4,5 puntos por cada año adicional de estudio.
+
+Asimismo, el tiempo de viaje constituye un factor explicativo sólido, donde cada 10 minutos adicionales de desplazamiento disminuyen la probabilidad de ser informal entre 2,3 y 3,7 puntos; este hallazgo es coherente con la hipótesis de Kain, la cual plantea que el empleo formal se ubica fuera de la comuna y exige desplazarse, mientras que el efecto del uso del transporte público resulta frágil al corregir por endogeneidad, sugiriendo que la clave radica en los destinos que conecta y no en el medio en sí. En consecuencia, las implicaciones de política pública para reducir la informalidad en la zona deben orientarse a elevar el nivel educativo de su población y a mejorar la conectividad mediante la optimización de la infraestructura, las rutas y los tiempos de viaje hacia los principales centros de empleo formal de la ciudad.
+
+Esperábamos que el transporte público se asociara con más informalidad, bajo la idea de que quien no tiene vehículo propio suele tener menores ingresos. El probit mostró lo contrario: usarlo se asocia con 16,3 puntos menos de probabilidad de ser informal. Esa hipótesis era propia del trabajo y no tenía respaldo directo en la literatura que revisamos. Al corregir por endogeneidad, el efecto pasa a +3,3 puntos pero deja de ser significativo (p = 0,78). Eso quiere decir que, con esta muestra y estos instrumentos, no se puede afirmar ni que el transporte público aumente ni que reduzca la informalidad.

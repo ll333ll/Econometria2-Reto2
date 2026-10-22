@@ -30,13 +30,13 @@ assets/js/app.js            Interactividad: player, galería, lightbox, mapa, ch
 assets/js/econ-data.js      Código R del análisis, agrupado por secciones
 assets/img/                 Fotos de la salida de campo
 assets/audio/               Entrevistas (Andrés, Jessica)
-assets/data/                data.txt y el documento fuente .qmd
+assets/docs/                informe final (.html) y código fuente (.qmd)
 ```
 
 ## 🔬 Reproducir el análisis
 
 ```bash
-quarto render assets/data/Reto2_Informalidad_Manrique.qmd
+quarto render assets/docs/Sanchez_Medina_Jimenez_Aristizabal_R2.qmd
 ```
 
 Requiere R y los paquetes listados en la primera pestaña de código (tidyverse, marginaleffects, mfx, pROC, survey, modelsummary, car, plotly, etc.), más los archivos `ECV_2025.xlsx` y `Diccionario-de-Datos-2025.xlsx` en la misma carpeta.

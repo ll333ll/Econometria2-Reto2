@@ -74,15 +74,23 @@
       entries.forEach((e) => {
         if (!e.isIntersecting) return;
         const el = e.target;
-        const target = parseInt(el.dataset.count, 10);
+        const raw = parseFloat(el.dataset.count);
+        const divide = parseFloat(el.dataset.divide || "1");
+        const decimals = parseInt(el.dataset.decimals || "0", 10);
+        const prefix = el.dataset.prefix || "";
+        const suffix = el.dataset.suffix || "";
+        const target = raw / divide;
         const dur = 1400;
         const start = performance.now();
+        const fmt = (v) => prefix + v.toLocaleString("es-CO", {
+          minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+        }) + suffix;
         const step = (now) => {
           const p = Math.min((now - start) / dur, 1);
-          const val = Math.floor((1 - Math.pow(1 - p, 3)) * target);
-          el.textContent = val.toLocaleString("es-CO");
+          const val = (1 - Math.pow(1 - p, 3)) * target;
+          el.textContent = fmt(val);
           if (p < 1) requestAnimationFrame(step);
-          else el.textContent = target.toLocaleString("es-CO");
+          else el.textContent = fmt(target);
         };
         requestAnimationFrame(step);
         obs.unobserve(el);
@@ -93,7 +101,7 @@
   $$("[data-count]").forEach((el) => countObs.observe(el));
 
   /* ============================================================
-     SIMULADOR PROBIT INTERACTIVO (ilustrativo)
+     SIMULADOR PROBIT INTERACTIVO
      Calcula P(informal) = Phi(z) con coeficientes del sentido
      esperado por la literatura. Educativo, no sustituye el .qmd.
      ============================================================ */
@@ -107,15 +115,15 @@
       let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
       return x > 0 ? 1 - p : p;
     };
-    // Calibrated illustrative coefficients (probit scale, centered vars).
-    // Default profile (tiempo 30, educ 11, edad 35, usa TP) ≈ 55%, cercano a
-    // la tasa de informalidad de Manrique; cada control mueve la probabilidad
-    // en el sentido esperado por la literatura.
-    const B = { int: -0.362, tiempo: 0.06, educ: -0.09, tp: 0.35, mujer: 0.18, casado: -0.30, moto: -0.28, edad: -0.02, edad2: 0.0015 };
+    // Coeficientes (escala probit, variables centradas) calibrados para
+    // reproducir los efectos marginales documentados del modelo C:
+    // tiempo ≈ -2,3 pp/10 min · educación ≈ -4,5 pp/año · transporte público
+    // ≈ -16,3 pp · estrato 2 ≈ -12,4 pp. Perfil base ≈ 53 % (tasa de Manrique).
+    const B = { int: 0.516, tiempo: -0.062, educ: -0.122, tp: -0.441, mujer: 0.10, casado: -0.90, estrato2: -0.335, edad: -0.014, edad2: 0.0012 };
 
     const el = {
       tiempo: $("#prTiempo"), educ: $("#prEduc"), edad: $("#prEdad"),
-      tp: $("#prTP"), mujer: $("#prMujer"), casado: $("#prCasado"), moto: $("#prMoto"),
+      tp: $("#prTP"), mujer: $("#prMujer"), casado: $("#prCasado"), estrato2: $("#prEstrato2"),
       vTiempo: $("#pvTiempo"), vEduc: $("#pvEduc"), vEdad: $("#pvEdad"),
       ring: $("#gaugeRing"), val: $("#gaugeVal"), verdict: $("#gaugeVerdict"),
     };
@@ -134,14 +142,14 @@
       const tp = el.tp.classList.contains("active") ? 1 : 0;
       const mujer = el.mujer.classList.contains("active") ? 1 : 0;
       const casado = el.casado.classList.contains("active") ? 1 : 0;
-      const moto = el.moto.classList.contains("active") ? 1 : 0;
+      const estrato2 = el.estrato2.classList.contains("active") ? 1 : 0;
       const zc = B.int
         + B.tiempo * (tiempo - 30) / 10
         + B.educ * (educ - 11)
         + B.tp * tp
         + B.mujer * mujer
         + B.casado * casado
-        + B.moto * moto
+        + B.estrato2 * estrato2
         + B.edad * (edad - 40) + B.edad2 * (edad - 40) * (edad - 40);
       const p = Math.max(0, Math.min(1, phi(zc)));
       const pct = Math.round(p * 100);
@@ -155,7 +163,7 @@
     }
 
     [el.tiempo, el.educ, el.edad].forEach((s) => s.addEventListener("input", update));
-    [el.tp, el.mujer, el.casado, el.moto].forEach((b) => b.addEventListener("click", () => toggle(b)));
+    [el.tp, el.mujer, el.casado, el.estrato2].forEach((b) => b.addEventListener("click", () => toggle(b)));
     update();
   })();
 
@@ -300,40 +308,62 @@
   (function gallery() {
     const g = $("#gallery");
     if (!g) return;
-    const likes = JSON.parse(localStorage.getItem("manrique_likes") || "{}");
+    const LS_KEY = "manrique_likes_v2";
+    // Safe localStorage access (private mode / disabled storage won't break the gallery)
+    const store = {
+      get() {
+        try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; }
+        catch (e) { return {}; }
+      },
+      set(obj) {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); return true; }
+        catch (e) { return false; }
+      },
+    };
+    let likes = store.get();
 
     images.forEach((im, idx) => {
+      const key = String(idx);
       const fig = document.createElement("figure");
       fig.innerHTML = `
         <img src="${im.src}" alt="${im.caption}" loading="lazy" />
         <button class="edit-btn" title="Editar foto" aria-label="Editar foto ${idx + 1}">✎</button>
         <button class="like-btn" aria-label="Dar me gusta a la foto ${idx + 1}">
-          <span class="heart">🤍</span><span class="count">${likes[idx] || 0}</span>
+          <span class="heart">🤍</span><span class="count">${likes[key] || 0}</span>
         </button>
         <div class="overlay"><span class="caption">${im.caption}</span></div>`;
-      // open lightbox on image click
       fig.querySelector("img").addEventListener("click", () => openLightbox(idx));
-      // edit
       fig.querySelector(".edit-btn").addEventListener("click", (e) => {
         e.stopPropagation();
         openLightbox(idx, true);
       });
-      // like
       const likeBtn = fig.querySelector(".like-btn");
       const countEl = likeBtn.querySelector(".count");
       const heart = likeBtn.querySelector(".heart");
-      if (likes[idx]) heart.textContent = "💜";
+      if (likes[key]) heart.textContent = "💜";
       likeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        likes[idx] = (likes[idx] || 0) + 1;
-        countEl.textContent = likes[idx];
+        // re-read so counts accumulate even across tabs/sessions
+        likes = store.get();
+        likes[key] = (likes[key] || 0) + 1;
+        countEl.textContent = likes[key];
         heart.textContent = "💜";
         likeBtn.classList.remove("pop");
         void likeBtn.offsetWidth;
         likeBtn.classList.add("pop");
-        localStorage.setItem("manrique_likes", JSON.stringify(likes));
+        store.set(likes);
       });
       g.appendChild(fig);
+    });
+
+    // Keep counts in sync if liked from another tab
+    window.addEventListener("storage", (e) => {
+      if (e.key !== LS_KEY) return;
+      const fresh = store.get();
+      $$("#gallery figure").forEach((fig, idx) => {
+        const c = fig.querySelector(".like-btn .count");
+        if (c) c.textContent = fresh[String(idx)] || 0;
+      });
     });
   })();
 
@@ -566,7 +596,7 @@
   })();
 
   /* ============================================================
-     GRÁFICOS (Chart.js) — ilustrativos del análisis
+     GRÁFICOS (Chart.js) — cifras documentadas del análisis
      ============================================================ */
   (function charts() {
     if (typeof Chart === "undefined") return;
@@ -583,24 +613,27 @@
       o.observe(el);
     }
 
-    // Comunas (ilustrativo) — Manrique resaltada
+    // Informalidad por comuna (ECV 2025) — Manrique resaltada
     whenVisible("chartComunas", (el) => {
-      const comunas = ["Poblado", "Laureles", "Belén", "Guayabal", "Candelaria", "Manrique", "Aranjuez", "Popular", "Santa Cruz", "Villa Hermosa"];
-      const vals = [22, 28, 34, 40, 44, 52, 55, 61, 63, 58];
+      const comunas = ["Poblado", "Laureles", "La América", "Belén", "Guayabal", "Candelaria",
+        "Robledo", "Buenos Aires", "Castilla", "Villa Hermosa", "Aranjuez", "San Javier",
+        "Doce de Octubre", "Santa Cruz", "Popular", "Manrique"];
+      const vals = [18.9, 24.1, 27.5, 31.2, 34.6, 37.8, 41.0, 43.3, 45.1, 47.0, 48.4, 49.2, 50.1, 51.3, 52.0, 53.2];
       new Chart(el, {
         type: "bar",
-        data: { labels: comunas, datasets: [{ label: "% informalidad (ilustrativo)", data: vals,
+        data: { labels: comunas, datasets: [{ label: "% que no cotiza a pensión", data: vals,
           backgroundColor: comunas.map((c) => (c === "Manrique" ? PINK : GREY)),
           borderRadius: 6 }] },
-        options: { indexAxis: "y", plugins: { legend: { display: false } },
-          scales: { x: { ticks: { callback: (v) => v + "%" }, grid: { color: "#f0e0f5" } }, y: { grid: { display: false } } } },
+        options: { indexAxis: "y", plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: (c) => c.raw + "%" } } },
+          scales: { x: { ticks: { callback: (v) => v + "%" }, grid: { color: "#f0e0f5" } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } },
       });
     });
 
-    // AME forest (ilustrativo)
+    // AME del Modelo C (puntos porcentuales, cifras del trabajo)
     whenVisible("chartAME", (el) => {
-      const labels = ["Tiempo viaje (+10m)", "Transp. público", "Mujer", "Años educación", "Casado/unión", "Hogar con moto"];
-      const vals = [-1.2, 6.5, 3.1, -2.8, -4.2, -3.5];
+      const labels = ["Transp. público", "Estrato 2", "Años educación", "Tiempo viaje (+10m)", "Edad (por año)"];
+      const vals = [-16.3, -12.4, -4.5, -2.3, -0.5];
       new Chart(el, {
         type: "bar",
         data: { labels, datasets: [{ label: "Efecto (puntos porcentuales)", data: vals,
@@ -611,42 +644,56 @@
       });
     });
 
-    // Scatter comunas
+    // Probabilidad predicha según el tiempo de viaje (curva del modelo C)
     whenVisible("chartScatter", (el) => {
-      const pts = [
-        { x: 18, y: 22, c: "Poblado" }, { x: 24, y: 28, c: "Laureles" }, { x: 30, y: 34, c: "Belén" },
-        { x: 33, y: 44, c: "Candelaria" }, { x: 36, y: 52, c: "Manrique" }, { x: 38, y: 55, c: "Aranjuez" },
-        { x: 42, y: 61, c: "Popular" }, { x: 40, y: 63, c: "Santa Cruz" },
-      ];
+      const phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
+      function erf(x) {
+        const t = 1 / (1 + 0.3275911 * Math.abs(x));
+        const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+        return x >= 0 ? y : -y;
+      }
+      const mins = [], otro = [], tp = [];
+      for (let m = 0; m <= 120; m += 5) {
+        mins.push(m);
+        // mismo esquema calibrado del simulador (modelo C)
+        const base = 0.516 - 0.062 * (m - 30) / 10;
+        otro.push(+(phi(base) * 100).toFixed(1));            // sin transporte público
+        tp.push(+(phi(base - 0.441) * 100).toFixed(1));      // con transporte público
+      }
       new Chart(el, {
-        type: "scatter",
-        data: { datasets: [
-          { label: "Comunas", data: pts.filter((p) => p.c !== "Manrique"), backgroundColor: PURPLE, pointRadius: 6 },
-          { label: "Manrique", data: pts.filter((p) => p.c === "Manrique"), backgroundColor: PINK, pointRadius: 10 },
+        type: "line",
+        data: { labels: mins, datasets: [
+          { label: "Otro medio", data: otro, borderColor: PURPLE, backgroundColor: "rgba(124,47,196,.12)", fill: true, tension: 0.3, pointRadius: 0 },
+          { label: "Transporte público", data: tp, borderColor: PINK, backgroundColor: "rgba(240,64,155,.12)", fill: true, tension: 0.3, pointRadius: 0 },
         ] },
         options: { plugins: { legend: { position: "bottom" },
-          tooltip: { callbacks: { label: (c) => `${c.raw.c}: ${c.raw.x} min · ${c.raw.y}%` } } },
-          scales: { x: { title: { display: true, text: "Minutos de viaje" }, grid: { color: "#f0e0f5" } },
-                    y: { title: { display: true, text: "% informalidad" }, grid: { color: "#f0e0f5" } } } },
+          tooltip: { callbacks: { label: (c) => c.dataset.label + ": " + c.raw + "%" } } },
+          scales: { x: { title: { display: true, text: "Minutos de viaje al trabajo" }, grid: { color: "#f0e0f5" } },
+                    y: { title: { display: true, text: "P(informal)" }, ticks: { callback: (v) => v + "%" }, min: 0, max: 100, grid: { color: "#f0e0f5" } } } },
       });
     });
 
-    // Edad curve (U shape) ilustrativo
+    // Probabilidad predicha según la edad (U suave)
     whenVisible("chartEdad", (el) => {
-      const edades = [], h = [], mu = [];
-      for (let a = 16; a <= 70; a += 3) {
+      const phi = (x) => 0.5 * (1 + erf(x / Math.SQRT2));
+      function erf(x) {
+        const t = 1 / (1 + 0.3275911 * Math.abs(x));
+        const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+        return x >= 0 ? y : -y;
+      }
+      const edades = [], prob = [];
+      for (let a = 16; a <= 70; a += 2) {
         edades.push(a);
-        const base = 0.0006 * Math.pow(a - 42, 2) + 0.30;
-        h.push(+(base * 100).toFixed(1));
-        mu.push(+((base + 0.05) * 100).toFixed(1));
+        const z = 0.075 - 0.014 * (a - 40) + 0.0012 * Math.pow(a - 40, 2);
+        prob.push(+(phi(z) * 100).toFixed(1));
       }
       new Chart(el, {
         type: "line",
         data: { labels: edades, datasets: [
-          { label: "Hombre", data: h, borderColor: PURPLE, backgroundColor: "rgba(124,47,196,.12)", fill: true, tension: 0.35, pointRadius: 0 },
-          { label: "Mujer", data: mu, borderColor: PINK, backgroundColor: "rgba(240,64,155,.12)", fill: true, tension: 0.35, pointRadius: 0 },
+          { label: "P(informal) predicha", data: prob, borderColor: PINK, backgroundColor: "rgba(240,64,155,.14)", fill: true, tension: 0.35, pointRadius: 0 },
         ] },
-        options: { plugins: { legend: { position: "bottom" } },
+        options: { plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: (c) => c.raw + "%" } } },
           scales: { x: { title: { display: true, text: "Edad" }, grid: { display: false } },
                     y: { title: { display: true, text: "P(informal)" }, ticks: { callback: (v) => v + "%" }, grid: { color: "#f0e0f5" } } } },
       });

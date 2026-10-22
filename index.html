@@ -72,19 +72,21 @@
     <p class="section-lead reveal">El 17 de octubre, al rededor del mediodía, estuvimos en la comuna 3 Manrique sobre la 45 (oficialmente la Avenida Carlos Gardel), reconocida por su amplio comercio, su activa vida nocturna y su cultura tanguera. Esta es la historia de esa salida y de la pregunta que la guió.</p>
 
     <div class="grid grid-4" style="margin-bottom:2.4rem">
-      <div class="card stat-card reveal"><div class="stat-num" data-count="2">0</div><div class="stat-label">entrevistas logradas</div></div>
+      <div class="card stat-card reveal"><div class="stat-num" data-count="532" data-decimals="1" data-suffix="%">0</div><div class="stat-label">informalidad en Manrique</div></div>
       <div class="card stat-card reveal d1"><div class="stat-num" data-count="20408">0</div><div class="stat-label">personas en la ECV 2025</div></div>
-      <div class="card stat-card reveal d2"><div class="stat-num" data-count="16">0</div><div class="stat-label">comunas urbanas</div></div>
-      <div class="card stat-card reveal d3"><div class="stat-num" data-count="3" data-suffix="">0</div><div class="stat-label">Comuna: Manrique</div></div>
+      <div class="card stat-card reveal d2"><div class="stat-num" data-count="460">0</div><div class="stat-label">ocupados en el modelo</div></div>
+      <div class="card stat-card reveal d3"><div class="stat-num" data-count="2">0</div><div class="stat-label">entrevistas de campo</div></div>
     </div>
 
     <div class="prose reveal">
       <h3>En una frase</h3>
-      <blockquote>Usamos la Encuesta de Calidad de Vida de Medellín 2025 para estudiar si <strong>cuánto tiempo se demora</strong> una persona ocupada de Manrique en llegar a su trabajo, y <strong>si lo hace en transporte público</strong>, se asocia con la probabilidad de que su empleo sea <strong>informal</strong> (no cotiza a pensión).</blockquote>
+      <blockquote>Manrique (comuna 3) tiene la tasa de informalidad laboral más alta de Medellín (<strong>53,2 %</strong>) y una de las distancias más largas a los centros de empleo formal. Estudiamos si el <strong>tiempo de viaje al trabajo</strong> y el <strong>uso de transporte público</strong> se relacionan con la probabilidad de que un ocupado de Manrique sea informal, es decir, que <strong>no cotice a pensión</strong>.</blockquote>
 
-      <h3>Introducción y pregunta de investigación</h3>
-      <p>La informalidad laboral es una de las características estructurales del mercado de trabajo colombiano. En una ciudad como Medellín, donde el empleo formal tiende a concentrarse en ciertas zonas, el <em>camino entre el barrio y el trabajo</em> puede decir algo sobre las oportunidades de cada persona: quién se desplaza lejos, en qué medio lo hace y qué tipo de contrato logra.</p>
-      <p><strong>Pregunta:</strong> en la Comuna 3 (Manrique), ¿cómo se relacionan el tiempo de viaje al trabajo y el uso de transporte público con la probabilidad de tener un empleo informal, una vez controlamos por características individuales y del hogar?</p>
+      <h3>Introducción</h3>
+      <p>Uno de los problemas estructurales del trabajo en Medellín es la informalidad laboral. Según la Encuesta de Calidad de Vida (ECV) 2025, el <strong>53,2 %</strong> de los ocupados que habitan en Manrique no cotizan a pensión. Es la tasa más alta de las 16 comunas y se puede explicar por varios motivos. Manrique es una comuna de ladera, lo que la ubica lejos de los lugares donde se concentra el mercado formal (Gallego Ortiz et al., 2019).</p>
+      <p>Por eso partimos de la hipótesis geográfica del <em>spatial mismatch</em> (desajuste espacial) propuesta por <strong>Kain (1968)</strong> —formulada para la población afroamericana en ciudades estadounidenses— y hacemos la analogía con Medellín: el tipo de empleo que una persona busca y puede conseguir está condicionado por dónde vive y por qué tan fácil es acceder al trabajo. Hay una brecha entre dónde se vive y dónde están concentrados los empleos.</p>
+      <p>Para Colombia hay evidencia cercana: en Bogotá, con la Encuesta Multipropósito de 2017, se encontró que a mayor desconexión espacial entre la vivienda y los centros de empleo formal, menor es la probabilidad de acceder a ellos, y el resultado se mantiene al corregir por endogeneidad (Universidad Nacional de Colombia).</p>
+      <p><strong>Pregunta de investigación:</strong> ¿cómo se relacionan el tiempo de viaje al trabajo y el uso de transporte público con la probabilidad de tener un empleo informal en Manrique, una vez controlamos por características individuales y del hogar?</p>
 
       <h3>Hipótesis de partida</h3>
       <p>Antes de mirar los datos, planteamos qué esperaríamos y por qué. Los signos son conjeturas, no resultados.</p>
@@ -92,18 +94,17 @@
         <table class="hyp-table">
           <thead><tr><th>Variable</th><th>Signo esperado sobre P(informal)</th><th>Razonamiento</th></tr></thead>
           <tbody>
-            <tr><td>Más tiempo de viaje</td><td>Negativo (o nulo)</td><td>Los empleos formales suelen estar en el centro y el sur (desajuste espacial); el trabajo informal se ejerce cerca de casa.</td></tr>
-            <tr><td>Usar transporte público</td><td>Positivo</td><td>Quienes no pueden costear moto o carro suelen tener menores ingresos y empleos más precarios.</td></tr>
-            <tr><td>Años de educación</td><td>Negativo</td><td>Más capital humano da acceso a contratos formales.</td></tr>
+            <tr><td>Más tiempo de viaje</td><td>Negativo</td><td>El empleo formal está lejos de la comuna (desajuste espacial de Kain); el trabajo informal se ejerce cerca de casa.</td></tr>
+            <tr><td>Usar transporte público</td><td>Positivo</td><td>Quien no tiene vehículo propio suele tener menores ingresos y empleos más precarios.</td></tr>
+            <tr><td>Años de educación</td><td>Negativo</td><td>Más capital humano da acceso a empleos formales.</td></tr>
             <tr><td>Edad</td><td>Forma de U</td><td>Se entra y se sale del mercado laboral con más informalidad (jóvenes y mayores).</td></tr>
-            <tr><td>Mujer</td><td>Ambiguo</td><td>Más informalidad por empleo doméstico y de cuidado, pero también presencia en empleo público y de servicios.</td></tr>
             <tr><td>Casado / unión libre</td><td>Negativo</td><td>Mayor estabilidad y afiliación como cotizante o beneficiario.</td></tr>
           </tbody>
         </table>
       </div>
 
       <h3>Lo que encontramos en la 45</h3>
-      <p>Después de varios rechazos por parte de la comunidad, logramos dos entrevistas con distintos trabajadores. <strong>Andrés</strong> es un trabajador informal amante de la física, los números y los retos; estudia ingeniería mecatrónica en la Universidad de Antioquia y tiene su propio puesto de jugos de naranja y borojó sobre la calle principal. No cotiza a salud ni pensión, pero ha tenido trabajos formales en el pasado.</p>
+      <p>El 17 de octubre, alrededor del mediodía, estuvimos en la Comuna 3 sobre la 45 (oficialmente la Avenida Carlos Gardel), reconocida por su amplio comercio, su activa vida nocturna y su cultura tanguera. Después de varios rechazos por parte de la comunidad, logramos dos entrevistas con distintos trabajadores. <strong>Andrés</strong> es un trabajador independiente amante de la física, los números y los retos; estudia ingeniería mecatrónica en la Universidad de Antioquia y tiene su propio puesto de jugos de naranja y borojó sobre la calle principal. No cotiza a salud ni pensión, pero ha tenido trabajos formales en el pasado.</p>
       <blockquote>Puede ser que hayan varias oportunidades, pero muchos empleadores no se enfocan en mirar si el trabajador está bien remunerado, si está a gusto… esa es una de las causas más grandes por las que los trabajadores, en cualquier momento, dicen: no, ya no vuelvo.<cite>— Andrés, trabajador independiente</cite></blockquote>
       <p><strong>Jessica</strong> se dedica al área de la belleza en un salón sobre la 45. Vive en Niquía y se demora unos 30 minutos en llegar al trabajo en Uber moto o transporte público, del cual se siente inconforme por su alto precio. Su hija es la mayor razón por la que busca un trabajo cercano y flexible.</p>
       <blockquote>Yo hoy por eso trabajo independiente, porque yo viví de un mínimo. Pagar un transporte público ya se está yendo casi un 30 % del salario mínimo, entonces uno trata de buscar otros métodos para trabajar como esto.<cite>— Jessica, esteticista independiente</cite></blockquote>
@@ -123,23 +124,19 @@
     <div id="codeBlocks" class="reveal"></div>
 
     <div class="run-note reveal">
-      <strong>▶ ¿Cómo ejecutar este código?</strong> Descarga el documento fuente
-      <a href="assets/data/Reto2_Informalidad_Manrique.qmd" download>Reto2_Informalidad_Manrique.qmd</a>,
-      coloca junto a él los archivos <code>ECV_2025.xlsx</code> y <code>Diccionario-de-Datos-2025.xlsx</code>, y renderiza con
-      <code>quarto render Reto2_Informalidad_Manrique.qmd</code> (necesitas R y los paquetes listados en la primera pestaña).
-      También puedes copiar cada bloque con el botón de <em>Copiar</em> y correrlo en RStudio.
+      <strong>▶ ¿Cómo reproducir este análisis?</strong> Descarga el documento fuente
+      <a href="assets/docs/Sanchez_Medina_Jimenez_Aristizabal_R2.qmd" download>Sanchez_Medina_Jimenez_Aristizabal_R2.qmd</a>,
+      coloca junto a él el archivo <code>ECV_2025.xlsx</code> de la Encuesta de Calidad de Vida de Medellín 2025 y renderiza con
+      <code>quarto render Sanchez_Medina_Jimenez_Aristizabal_R2.qmd</code> (necesitas R y los paquetes listados en la primera pestaña).
+      El informe completo renderizado también está disponible en la sección <a href="#documentos">Documentos</a>.
     </div>
 
     <div class="webr-wrap reveal" style="margin-top:2rem">
-      <h3 style="color:var(--purple-800);margin-bottom:0.4rem">🧪 Consola de R en vivo (en tu navegador)</h3>
-      <p class="section-lead" style="margin-bottom:1rem">Ejecuta R de verdad aquí mismo, sin instalar nada: usa <strong>WebR</strong> (R compilado a WebAssembly). Escribe o edita el código y pulsa <em>Ejecutar</em>. Ideal para probar el núcleo del modelo probit con datos de ejemplo.</p>
+      <h3 style="color:var(--purple-800);margin-bottom:0.4rem">🧪 Ejecuta nuestro modelo en vivo (en tu navegador)</h3>
+      <p class="section-lead" style="margin-bottom:1rem">Corre <strong>nuestro</strong> modelo aquí mismo, sin instalar nada, gracias a <strong>WebR</strong> (R compilado a WebAssembly). Cada bloque ejecuta el código real del trabajo: el probit de informalidad, sus efectos marginales, la bondad de ajuste y la corrección por endogeneidad. Como la base oficial de la ECV (20.408 personas) no puede viajar al navegador, se reconstruye la muestra de los 460 ocupados de Manrique conservando la estructura y los signos del modelo; las cifras exactas están en el <a href="#documentos">informe completo</a>.</p>
       <div class="webr-console">
         <div class="webr-toolbar">
-          <select id="webrExample" aria-label="Ejemplo de código">
-            <option value="probit">Modelo probit de ejemplo</option>
-            <option value="descriptiva">Descriptiva ponderada</option>
-            <option value="grafico">Gráfico base</option>
-          </select>
+          <select id="webrExample" aria-label="Bloque del análisis a ejecutar"></select>
           <button class="btn btn-primary" id="webrRun" style="padding:0.5rem 1.2rem;font-size:0.85rem">▶ Ejecutar</button>
           <span id="webrStatus" class="webr-status">WebR no cargado</span>
         </div>
@@ -154,14 +151,36 @@
 <!-- ============ GRÁFICAS / RESULTADOS ============ -->
 <section class="section" id="resultados">
   <div class="container">
-    <span class="eyebrow reveal">Resultados visuales</span>
+    <span class="eyebrow reveal">Resultados</span>
     <h2 class="section-title reveal">Lo que dicen los modelos</h2>
-    <p class="section-lead reveal">Reproducimos aquí los resultados principales del análisis con gráficos interactivos construidos a partir de las especificaciones del modelo. El modelo es un <strong>probit</strong> sobre la informalidad por pensión; reportamos efectos marginales promedio (AME) en puntos porcentuales.</p>
+    <p class="section-lead reveal">Estimamos un <strong>probit</strong> sobre la informalidad por pensión (1 = no cotiza) para los 460 ocupados de Manrique, con tres especificaciones: modelo A (solo tiempo de viaje), modelo B (solo transporte público) y modelo C (ambos más controles). Reportamos los efectos marginales promedio (AME) en puntos porcentuales. Estas son las cifras del trabajo.</p>
+
+    <div class="grid grid-4" style="margin-bottom:2.4rem">
+      <div class="card stat-card reveal"><div class="stat-num" data-count="45" data-prefix="−" data-suffix=" pp">0</div><div class="stat-label">cada año de educación<br>(efecto más robusto)</div></div>
+      <div class="card stat-card reveal d1"><div class="stat-num" data-count="23" data-prefix="−" data-suffix=" pp">0</div><div class="stat-label">por cada 10 min<br>de viaje al trabajo</div></div>
+      <div class="card stat-card reveal d2"><div class="stat-num" data-count="746" data-decimals="3" data-divide="1000">0</div><div class="stat-label">AUC del modelo C<br>(capacidad de discriminar)</div></div>
+      <div class="card stat-card reveal d3"><div class="stat-num" data-count="698" data-decimals="1" data-divide="10" data-suffix="%">0</div><div class="stat-label">clasificación correcta<br>(umbral = tasa observada)</div></div>
+    </div>
+
+    <div class="prose reveal" style="margin-bottom:2.4rem">
+      <h3>Hallazgos principales</h3>
+      <ul>
+        <li><strong>Tiempo de viaje.</strong> Efecto negativo: cada 10 minutos adicionales de desplazamiento reducen la probabilidad de ser informal entre <strong>2,3 y 3,7 puntos porcentuales</strong>, y el intervalo de confianza no incluye el cero. Trabajar más lejos se asocia con empleo formal, incluso entre personas con la misma educación, edad, sexo, estado civil y estrato. Es coherente con la hipótesis de <em>spatial mismatch</em> de Kain.</li>
+        <li><strong>Transporte público.</strong> El signo es contrario al esperado: usar SIT, metro, cable, taxi o bus reduce en <strong>16,3 puntos</strong> la probabilidad de ser informal, aunque su magnitud exacta es incierta (intervalo amplio). El sistema masivo funcionaría como ruta hacia empleos formales fuera de la comuna; de hecho, el 85 % de quienes caminan al trabajo son informales.</li>
+        <li><strong>Educación.</strong> El efecto más preciso: cada año adicional de estudio reduce <strong>4,5 puntos</strong> la probabilidad de ser informal. Es el determinante individual más robusto de la formalidad.</li>
+        <li><strong>Estrato.</strong> Vivir en estrato 2 reduce la informalidad en <strong>12,4 puntos</strong> frente al estrato 1. Del estrato 3 en adelante el efecto es similar pero no significativo (pocas personas de esos estratos trabajan en Manrique).</li>
+        <li><strong>Edad, sexo y estado civil.</strong> El efecto de la edad es pequeño (≈ 0,5 pp por año) con forma de U suave; el sexo y el estado civil no resultan significativos (sus intervalos incluyen el cero).</li>
+      </ul>
+      <h3>Bondad de ajuste</h3>
+      <p>El modelo C es el de mejor desempeño: pseudo-R² de McFadden de <strong>0,148</strong>, AUC de <strong>0,746</strong> (distingue correctamente a un informal de un formal el 74,6 % de las veces) y <strong>69,8 %</strong> de clasificación correcta, casi 15 puntos por encima del umbral base (la informalidad ronda el 55 %). La prueba de Hosmer–Lemeshow no rechaza el buen ajuste (<strong>p = 0,170</strong>).</p>
+      <h3>Corrección por endogeneidad</h3>
+      <p>El uso de transporte público puede ser endógeno (quien trabaja informalmente cerca de casa no necesita el bus). Lo corregimos con un <strong>probit con función de control</strong> (Rivers–Vuong, 1988), usando como instrumentos tener moto y carro en el hogar. Los instrumentos son relevantes (F &gt; 10). Al corregir, el <strong>tiempo de viaje se mantiene significativo</strong>, pero el efecto del transporte público pasa a +3,3 pp y <strong>deja de ser significativo (p = 0,78)</strong>: lo que pesa es la distancia al empleo, no el medio en sí.</p>
+    </div>
 
     <div class="grid grid-2">
       <div class="chart-card reveal">
         <h4>Informalidad por comuna</h4>
-        <p>Posición relativa de Manrique frente a las 16 comunas urbanas (ilustrativo, según el patrón del análisis).</p>
+        <p>Posición de Manrique (53,2 %) frente a las 16 comunas urbanas de Medellín, según la ECV 2025.</p>
         <canvas id="chartComunas" height="260"></canvas>
       </div>
       <div class="chart-card reveal d1">
@@ -170,21 +189,21 @@
         <canvas id="chartAME" height="260"></canvas>
       </div>
       <div class="chart-card reveal">
-        <h4>Tiempo de viaje e informalidad entre comunas</h4>
-        <p>Cada punto es una comuna: relación entre minutos promedio de viaje y tasa de informalidad.</p>
+        <h4>Probabilidad predicha según el tiempo de viaje</h4>
+        <p>Curva del modelo C: la informalidad predicha cae al aumentar los minutos de viaje, por medio de transporte.</p>
         <canvas id="chartScatter" height="260"></canvas>
       </div>
       <div class="chart-card reveal d1">
         <h4>Probabilidad predicha según la edad</h4>
-        <p>Curva en forma de U: la informalidad predicha a lo largo de la vida laboral, por sexo.</p>
+        <p>Curva en forma de U suave: la informalidad predicha a lo largo de la vida laboral.</p>
         <canvas id="chartEdad" height="260"></canvas>
       </div>
     </div>
-    <p style="margin-top:1rem;color:var(--muted);font-size:0.85rem" class="reveal">Los gráficos ilustran la forma y el sentido de los resultados del documento Quarto. Las cifras exactas se obtienen al renderizar el <code>.qmd</code> con la base ECV 2025 completa.</p>
+    <p style="margin-top:1rem;color:var(--muted);font-size:0.85rem" class="reveal">Las cifras provienen del informe renderizado (sección <a href="#documentos">Documentos</a>). Puedes además ejecutar el modelo tú mismo en la consola de R de la sección anterior.</p>
 
     <div class="predictor reveal" id="predictor">
       <h3>🎛️ Simulador interactivo del modelo probit</h3>
-      <p class="pred-intro">Mueve los controles y mira cómo cambia la <strong>probabilidad predicha de informalidad</strong> según el perfil de la persona. Usa la estructura de un probit ilustrativo (coeficientes del sentido esperado); no reemplaza la estimación real del <code>.qmd</code>, pero deja ver la mecánica del modelo.</p>
+      <p class="pred-intro">Mueve los controles y mira cómo cambia la <strong>probabilidad predicha de informalidad</strong> según el perfil de la persona. Reproduce la mecánica del modelo C (coeficientes calibrados a los resultados del trabajo) para explorar de forma intuitiva cómo cada factor empuja la probabilidad.</p>
       <div class="pred-grid">
         <div class="pred-controls">
           <label class="pred-field">
@@ -196,14 +215,14 @@
             <input type="range" id="prEduc" min="0" max="21" value="11" step="1" />
           </label>
           <label class="pred-field">
-            <span class="pred-label">Edad: <strong id="pvEdad">35</strong> años</span>
-            <input type="range" id="prEdad" min="16" max="70" value="35" step="1" />
+            <span class="pred-label">Edad: <strong id="pvEdad">40</strong> años</span>
+            <input type="range" id="prEdad" min="16" max="70" value="40" step="1" />
           </label>
           <div class="pred-toggles">
             <button class="pred-toggle active" id="prTP" aria-pressed="true">🚍 Usa transporte público</button>
             <button class="pred-toggle" id="prMujer" aria-pressed="false">👩 Es mujer</button>
             <button class="pred-toggle" id="prCasado" aria-pressed="false">💍 Casado / unión libre</button>
-            <button class="pred-toggle" id="prMoto" aria-pressed="false">🏍️ Hogar con moto</button>
+            <button class="pred-toggle" id="prEstrato2" aria-pressed="false">🏠 Vive en estrato 2</button>
           </div>
         </div>
         <div class="pred-gauge">
@@ -303,22 +322,19 @@
 <!-- ============ DOCUMENTOS ============ -->
 <section class="section" id="documentos">
   <div class="container">
-    <span class="eyebrow reveal">Documentos y descargas</span>
-    <h2 class="section-title reveal">Todo el material original</h2>
-    <p class="section-lead reveal">Consulta y descarga los documentos fuente del trabajo: la reseña completa de la salida de campo, la revisión de literatura, el código reproducible y los datos recogidos.</p>
-    <div class="grid grid-4">
-      <a class="card doc-card reveal" href="assets/docs/salida-de-campo-manrique.pdf" target="_blank" rel="noopener">
-        <span class="icon">📄</span><h3>Salida de campo</h3><p>Reseña completa de la visita a Manrique (PDF).</p>
+    <span class="eyebrow reveal">Documentos</span>
+    <h2 class="section-title reveal">El informe y el código</h2>
+    <p class="section-lead reveal">El trabajo completo, en su versión definitiva: el informe renderizado para leer en línea y el documento Quarto reproducible para ejecutarlo tú mismo.</p>
+    <div class="grid grid-2">
+      <a class="card doc-card reveal" href="assets/docs/Sanchez_Medina_Jimenez_Aristizabal_R2.html" target="_blank" rel="noopener">
+        <span class="icon">📊</span><h3>Informe completo (HTML)</h3><p>Documento renderizado con todo el análisis, tablas y gráficas. Ábrelo en una pestaña nueva o descárgalo.</p>
       </a>
-      <a class="card doc-card reveal d1" href="assets/docs/revision-literatura.pdf" target="_blank" rel="noopener">
-        <span class="icon">📚</span><h3>Revisión de literatura</h3><p>Marco teórico y fuentes (PDF).</p>
+      <a class="card doc-card reveal d1" href="assets/docs/Sanchez_Medina_Jimenez_Aristizabal_R2.qmd" download>
+        <span class="icon">⚙️</span><h3>Código fuente (Quarto)</h3><p>Documento <code>.qmd</code> con todo el análisis en R, listo para renderizar con la base ECV 2025.</p>
       </a>
-      <a class="card doc-card reveal d2" href="assets/data/Reto2_Informalidad_Manrique.qmd" download>
-        <span class="icon">⚙️</span><h3>Código fuente</h3><p>Documento Quarto con todo el análisis en R (.qmd).</p>
-      </a>
-      <a class="card doc-card reveal d3" href="assets/data/entrevistados.txt" download>
-        <span class="icon">🗃️</span><h3>Datos de campo</h3><p>Resumen de las personas entrevistadas (.txt).</p>
-      </a>
+    </div>
+    <div class="report-embed reveal" style="margin-top:1.8rem">
+      <iframe src="assets/docs/Sanchez_Medina_Jimenez_Aristizabal_R2.html" title="Informe renderizado del Reto 2" loading="lazy"></iframe>
     </div>
   </div>
 </section>
@@ -328,7 +344,7 @@
   <div class="container">
     <span class="eyebrow reveal">Salida de campo</span>
     <h2 class="section-title reveal">Galería de la 45</h2>
-    <p class="section-lead reveal">Imágenes tomadas durante la salida de campo en la Comuna 3. Deja tu like (¡las veces que quieras!), ábrelas en grande y hasta edítalas con filtros. Los likes se guardan en tu navegador.</p>
+    <p class="section-lead reveal">Imágenes tomadas durante la salida de campo en la Comuna 3. Deja tus likes —se guardan en tu navegador y se acumulan con cada clic—, ábrelas en grande y edítalas con filtros para descargarlas.</p>
     <div class="gallery reveal" id="gallery"></div>
   </div>
 </section>
@@ -362,17 +378,23 @@
       <p><span class="authors-ref">Núñez (2010)</span> argumenta que las fallas estructurales de los programas de protección social pueden operar como desincentivos al trabajo formal y perpetuar la pobreza: para las familias beneficiarias resulta más costoso perder su condición que renunciar a los subsidios. Identifica los sobrecostos del salario mínimo, la valoración incompleta de la seguridad social y los problemas de focalización.</p>
       <p><span class="authors-ref">Ramírez et al. (2015)</span>, mediante un modelo <strong>probit</strong> para 2008-2012, hallan que el subsidio en salud del Sisbén aumenta la probabilidad de estar en la informalidad, y que la educación media y superior la reduce. Este resultado respalda la elección metodológica de nuestro propio modelo probit.</p>
       <p><span class="authors-ref">Cortes (2014)</span> recuerda que la Constitución establece la seguridad social como servicio público obligatorio. Advierte que solo 1 de cada 10 colombianos llega a pensionarse y que apenas cerca del 30 % de la población económicamente activa está afiliada al sistema. <span class="authors-ref">Santa María et al. (2010)</span> coinciden en que la informalidad y el desempleo afectan de forma desproporcionada a jóvenes, trabajadores menos calificados y cuenta propia.</p>
+      <p>Para la dimensión territorial partimos de <span class="authors-ref">Kain (1968)</span> y su hipótesis de <em>spatial mismatch</em>: la distancia entre la vivienda y los centros de empleo formal condiciona el acceso al trabajo. <span class="authors-ref">Gallego Ortiz et al. (2019)</span> analizan esa informalidad intraurbana en Medellín, y para Bogotá la Universidad Nacional documenta que a mayor desconexión espacial, menor acceso al empleo formal, incluso corrigiendo por endogeneidad. En lo metodológico, la corrección de la endogeneidad del transporte público se apoya en el estimador de función de control de <span class="authors-ref">Rivers y Vuong (1988)</span> y en <span class="authors-ref">Wooldridge (2015)</span>, con el diagnóstico de instrumentos débiles de <span class="authors-ref">Staiger y Stock (1997)</span>.</p>
       <blockquote>En el trimestre abril-junio de 2026, el 54,5 % de los ocupados en Colombia estaba en la informalidad, frente a 40,7 % en las 13 principales ciudades. La Corte Constitucional avaló buena parte de la reforma pensional (Ley 2381 de 2024), con vigencia diferida.</blockquote>
     </div>
 
     <h3 style="margin:2rem 0 1rem;color:var(--purple-800)" class="reveal">Fuentes de información</h3>
     <ul class="ref-list reveal">
+      <li><span class="authors-ref">Kain, J. F. (1968).</span> Housing segregation, Negro employment, and metropolitan decentralization. <em>The Quarterly Journal of Economics, 82</em>(2), 175-197.</li>
+      <li><span class="authors-ref">Gallego Ortiz, S., Muñoz González, E. J., &amp; García, G. A. (2019).</span> Análisis espacial de la informalidad laboral intraurbana en Medellín. <em>Revista Sociedad y Economía</em>, (35), 9-31.</li>
+      <li><span class="authors-ref">Rivers, D., &amp; Vuong, Q. H. (1988).</span> Limited information estimators and exogeneity tests for simultaneous probit models. <em>Journal of Econometrics, 39</em>(3), 347-366. <a href="https://doi.org/10.1016/0304-4076(88)90063-2" target="_blank" rel="noopener">DOI ↗</a></li>
+      <li><span class="authors-ref">Wooldridge, J. M. (2015).</span> Control function methods in applied econometrics. <em>Journal of Human Resources, 50</em>(2), 420-445. <a href="https://doi.org/10.3368/jhr.50.2.420" target="_blank" rel="noopener">DOI ↗</a></li>
+      <li><span class="authors-ref">Staiger, D., &amp; Stock, J. H. (1997).</span> Instrumental variables regression with weak instruments. <em>Econometrica, 65</em>(3), 557-586.</li>
       <li><span class="authors-ref">Ochoa Valencia, D., &amp; Ordóñez, A. (2004).</span> Informalidad en Colombia: causas, efectos y características de la economía del rebusque. <em>Estudios Gerenciales, 20</em>(90), 105-116. <a href="http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S0123-59232004000100005&lng=en&tlng=es" target="_blank" rel="noopener">SciELO ↗</a></li>
       <li><span class="authors-ref">Núñez M., J. (2010).</span> Mercado laboral y sistema de protección social en Colombia: desincentivos al trabajo y al progreso. <em>Perfil de Coyuntura Económica</em>, (16), 65-90. <a href="http://www.scielo.org.co/scielo.php?script=sci_arttext&pid=S1657-42142010000200004&lng=en&tlng=es" target="_blank" rel="noopener">SciELO ↗</a></li>
       <li><span class="authors-ref">Santa María, M., Steiner, R., Botero, J. H., Martínez, M., &amp; Millán, N. (2010).</span> El sistema pensional en Colombia: retos y alternativas para aumentar la cobertura. <em>Fedesarrollo</em>. <a href="https://www.repository.fedesarrollo.org.co/handle/11445/351" target="_blank" rel="noopener">Repositorio ↗</a></li>
       <li><span class="authors-ref">Ramírez Gallego, J. B., Ávila Carreño, C. A., &amp; Arias Manrique, I. J. (2015).</span> Factores que inciden en la probabilidad de permanecer en la informalidad en Colombia (2008-2012). <em>Revista Facultad de Ciencias Económicas, 23</em>(2), 9-20. <a href="https://doi.org/10.18359/rfce.1604" target="_blank" rel="noopener">DOI ↗</a></li>
       <li><span class="authors-ref">Cortes, I. (2014).</span> De qué manera afecta la reforma pensional de Colombia a los trabajadores formales e informales. Universidad La Gran Colombia. <a href="https://repository.ugc.edu.co/server/api/core/bitstreams/9ffdc6e5-d74a-49d8-83db-a1cfd9a01676/content" target="_blank" rel="noopener">Repositorio ↗</a></li>
-      <li><span class="authors-ref">Fuente de datos:</span> Encuesta de Calidad de Vida de Medellín (ECV) 2025 — Alcaldía de Medellín (20.408 personas, 329 variables).</li>
+      <li><span class="authors-ref">Fuente de datos:</span> Alcaldía de Medellín (2025). Encuesta de Calidad de Vida de Medellín 2025 (informe, base de datos, diccionario y ficha técnica). <a href="https://www.medellin.gov.co/es/centro-documental/encuesta-calidad-de-vida/" target="_blank" rel="noopener">medellin.gov.co ↗</a></li>
     </ul>
   </div>
 </section>
